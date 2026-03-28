@@ -487,4 +487,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) > 1:
+        main()
+    else:
+        print("Starting Police Web UI (Classic Mode)...")
+        from police_web_ui import app as flask_app
+        # Run on port 5000 as previously requested in the documentation
+        flask_app.run(host='0.0.0.0', port=5000, debug=True)

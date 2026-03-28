@@ -3,6 +3,19 @@ import requests
 import json
 import time
 
+def load_env():
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if "=" in line and not line.startswith("#"):
+                    key, value = line.strip().split("=", 1)
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    os.environ[key] = value
+
+load_env()
+
 class FastApiClient:
     """Unified client for Fast APIs like GitHub Models and Groq."""
     
