@@ -1,0 +1,116 @@
+{
+  "system": {
+    "version": "v2.1.0",
+    "name": "Police Report Processing Engine",
+    "organization": "Sri Lanka Police - IG's Command & Information Division"
+  },
+  "processing": {
+    "default_mode": "regex",
+    "enable_ai": false,
+    "confidence_threshold": 0.6,
+    "quality_gate_enabled": true,
+    "cache_enabled": true,
+    "cache_ttl_hours": 24
+  },
+  "ai_engines": {
+    "default": "openrouter",
+    "openrouter": {
+      "enabled": true,
+      "model": "deepseek/deepseek-r1:free",
+      "max_tokens": 4000,
+      "temperature": 0.7,
+      "timeout": 120
+    },
+    "ollama": {
+      "enabled": true,
+      "model": "gpt-oss:120b-cloud",
+      "base_url": "http://localhost:11434/api/generate",
+      "timeout": 180
+    },
+    "claude": {
+      "enabled": false,
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens": 4000
+    },
+    "gemini": {
+      "enabled": false,
+      "model": "gemini-1.5-flash",
+      "temperature": 0.7
+    }
+  },
+  "report_settings": {
+    "logo_path": "police_logo.png",
+    "confidential_header": true,
+    "include_signature_block": true,
+    "include_distribution_list": true,
+    "page_size": "A4",
+    "font_family": "Times New Roman",
+    "font_size": "12pt"
+  },
+  "output": {
+    "base_directory": "uploads/sinhala",
+    "html_enabled": true,
+    "pdf_enabled": true,
+    "json_enabled": false,
+    "filename_format": "{basename}_{report_type}_Report"
+  },
+  "batch_processing": {
+    "enabled": true,
+    "max_concurrent": 1,
+    "retry_on_failure": true,
+    "max_retries": 2,
+    "log_directory": "tmp/batch_logs"
+  },
+  "web_interface": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "debug": true,
+    "upload_folder": "uploads",
+    "max_file_size_mb": 50,
+    "allowed_extensions": [".pdf", ".txt"]
+  },
+  "analytics": {
+    "generate_case_table": true,
+    "generate_summary_matrix": true,
+    "track_statistics": true,
+    "save_processing_logs": true
+  },
+  "validation": {
+    "require_station_name": true,
+    "require_hierarchy": false,
+    "require_reference_code": false,
+    "min_body_length": 20,
+    "validate_dates": true,
+    "validate_money_values": true
+  },
+  "sections": {
+    "general": [
+      "01. SERIOUS CRIMES COMMITTED",
+      "02. RAPE, SEXUAL ASSAULT & CHILD ABUSE",
+      "03. FATAL ACCIDENTS",
+      "04. POLICE OFFICERS/VEHICLES INVOLVED IN ROAD ACCIDENTS",
+      "05. FINDING OF DEAD BODIES UNDER SUSPICIOUS CIRCUMSTANCES",
+      "06. COMPLAINTS AGAINST POLICE",
+      "07. SERIOUS INJURY/ILLNESSES/DEATHS OF POLICE OFFICERS",
+      "08. DETECTION OF NARCOTIC AND ILLEGAL LIQUOR",
+      "09. ARREST OF TRI-FORCES MEMBERS",
+      "10. OTHER MATTERS"
+    ],
+    "security": [
+      "01. VERY IMPORTANT MATTERS OF SECURITY INTEREST",
+      "02. SUBVERSIVE ACTIVITIES",
+      "03. RECOVERIES OF ARMS/AMMUNITION/EXPLOSIVES"
+    ]
+  },
+  "provinces": [
+    "WESTERN PROVINCE",
+    "CENTRAL PROVINCE",
+    "SOUTHERN PROVINCE",
+    "NORTHERN PROVINCE",
+    "EASTERN PROVINCE",
+    "NORTH WESTERN PROVINCE",
+    "NORTH CENTRAL PROVINCE",
+    "UVA PROVINCE",
+    "SABARAGAMUWA PROVINCE"
+  ]
+}

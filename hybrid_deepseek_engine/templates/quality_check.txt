@@ -1,0 +1,5 @@
+Check the translated English text:
+- Is it complete? ✅
+- Are numbers, names correct? ✅
+- Is grammar professional? ✅
+Output YES if perfect, else NO.

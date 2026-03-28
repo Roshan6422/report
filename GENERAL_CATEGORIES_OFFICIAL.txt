@@ -1,0 +1,168 @@
+================================================================================
+GENERAL SITUATION REPORT - OFFICIAL 10 CATEGORIES ✅
+================================================================================
+
+CORRECT CATEGORIES (As per official format):
+
+01. SERIOUS CRIMES COMMITTED
+    - Homicides, murders
+    - Robberies, armed robberies
+    - Thefts, burglaries, house breaking
+    - Recovery of arms, ammunition, explosives
+    - Other serious criminal activities
+
+02. RAPE, SEXUAL ASSAULT & CHILD ABUSE
+    - Rape cases
+    - Sexual assault
+    - Sexual abuse
+    - Child abuse
+    - Molestation
+    - Indecent behavior
+
+03. FATAL ACCIDENTS
+    - Road accidents with fatalities
+    - Fatal traffic accidents
+    - Deaths due to accidents
+
+04. POLICE OFFICERS/VEHICLES INVOLVED IN ROAD ACCIDENTS AND DAMAGES TO SRI LANKA POLICE PROPERTY
+    - Police officers involved in accidents
+    - Police vehicles in accidents
+    - Damages to police property
+    - Police-related accident incidents
+
+05. FINDING OF DEAD BODIES UNDER SUSPICIOUS CIRCUMSTANCES
+    - Unidentified dead bodies
+    - Suspicious deaths
+    - Bodies found under suspicious circumstances
+    - Unexplained deaths
+
+06. SERIOUS INJURY/ ILLNESSES/ DEATHS OF POLICE OFFICERS
+    - Police officers seriously injured
+    - Police officers with serious illnesses
+    - Deaths of police officers
+    - SGOO (Senior Gazetted Officer) related incidents
+    - Hospital admissions of police officers
+
+07. DETECT OF NARCOTIC AND ILLEGAL LIQUOR
+    - Narcotic detections
+    - Drug seizures (heroin, cocaine, cannabis, etc.)
+    - Illegal liquor detections
+    - Illicit liquor (kasippu)
+    - Drug-related arrests
+
+08. ARREST OF TRI-FORCES MEMBERS
+    - Army personnel arrests
+    - Navy personnel arrests
+    - Air Force personnel arrests
+    - Military personnel arrests
+    - Tri-forces related incidents
+
+09. OTHER MATTERS
+    - Incidents not fitting other categories
+    - Miscellaneous police matters
+    - General incidents
+    - Default category for uncategorized items
+
+10. [RESERVED]
+    - Reserved for future use
+    - Special categories as needed
+
+================================================================================
+CATEGORIZATION KEYWORDS
+================================================================================
+
+Category 01 - SERIOUS CRIMES:
+- homicide, murder, killed, deceased
+- robbery, robbed, armed robbery
+- theft, stolen, burglary, house breaking
+- detonator, firearm, weapon, arms, ammunition
+
+Category 02 - RAPE & SEXUAL ASSAULT:
+- rape, sexual assault, sexual abuse
+- child abuse, molestation, indecent
+
+Category 03 - FATAL ACCIDENTS:
+- accident + fatal
+- fatal accident, road accident
+
+Category 04 - POLICE ACCIDENTS & DAMAGES:
+- police officer, police vehicle
+- police accident, damage to police
+
+Category 05 - SUSPICIOUS DEAD BODIES:
+- dead body, suspicious death
+- unidentified body, suspicious circumstances
+
+Category 06 - POLICE INJURIES/DEATHS:
+- police officer injured, police officer death
+- police officer illness, sgoo
+
+Category 07 - NARCOTICS & LIQUOR:
+- narcotic, drug, heroin, cocaine, cannabis
+- illegal liquor, illicit liquor, kasippu
+
+Category 08 - TRI-FORCES ARRESTS:
+- tri-force, army, navy, air force
+- soldier, military
+
+Category 09 - OTHER MATTERS:
+- Default for all other incidents
+
+================================================================================
+CASE DATA TABLE (28 Rows)
+================================================================================
+
+The General Report includes a 28-row case data table on page 16 with:
+- S/Nos. (01-28)
+- Case type
+- Reported count
+- Solved count
+- Unsolved count
+
+Sample rows:
+01. Serious Crimes Committed
+02. Rape, Sexual Assault & Child Abuse
+03. Fatal Accidents
+04. Police Officers/Vehicles involved in Road Accidents
+05. Finding of Dead Bodies under Suspicious Circumstances
+06. Serious Injury/Illnesses/Deaths of Police Officers
+07. Detect of Narcotic and Illegal Liquor
+08. Arrest of Tri-forces Members
+09. Other Matters
+... (continues to 28 rows)
+
+================================================================================
+IMPLEMENTATION STATUS
+================================================================================
+
+✅ All 10 categories implemented in:
+   - general_report_engine.py
+   - general_report_processor.py
+   - process_general_sample.py
+   - test_general_report.py
+
+✅ Automatic categorization working
+✅ Case data table with correct categories
+✅ "Nil" display for empty categories
+✅ Province organization within categories
+
+================================================================================
+USAGE
+================================================================================
+
+The system automatically categorizes incidents based on keywords in the
+incident body and summary. Priority is given to specific categories (02-08)
+before defaulting to category 01 (Serious Crimes) or 09 (Other Matters).
+
+Example:
+- Incident with "rape" → Category 02
+- Incident with "fatal accident" → Category 03
+- Incident with "narcotic" → Category 07
+- Incident with "army" → Category 08
+- Incident with "theft" → Category 01
+- Incident with no specific keywords → Category 09
+
+================================================================================
+Date Updated: March 28, 2026
+Status: ✅ COMPLETE AND VERIFIED
+================================================================================

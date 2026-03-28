@@ -1,0 +1,361 @@
+{
+  "header": {
+    "report_title": "දෛනික සිදුවීම් වාර්ථාව",
+    "date_range": {
+      "start_date": "2026.03.22",
+      "start_time": "0400",
+      "end_date": "2026.03.23",
+      "end_time": "0400"
+    },
+    "report_period": "2026.03.22 පැය 0400 සිට 2026.03.23 දින පැය 0400 දක්වා"
+  },
+  "categories": {
+    "01": {
+      "category_number": "01",
+      "category_name": "ත්‍රස්තවාදී ක්‍රියාකාරකම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      },
+      "status": "නැත"
+    },
+    "02": {
+      "category_number": "02",
+      "category_name": "අවි ආයුධ සොයා ගැනීම (පුපුරණ ද්‍රව්‍ය / උණ්ඩ)",
+      "incidents": [
+        {
+          "police_station": "",
+          "date": "",
+          "time": "",
+          "location": "",
+          "victim": {
+            "name": "",
+            "age": "",
+            "gender": "",
+            "occupation": "",
+            "address": "",
+            "phone": ""
+          },
+          "suspect": {
+            "name": "",
+            "age": "",
+            "gender": "",
+            "occupation": "",
+            "address": "",
+            "phone": ""
+          },
+          "description": "අවි ආයුධ සොයා ගැනීම (පුපුරණ ද්රව්ය / උණ්ඩ) :- 02",
+          "financial_loss": "",
+          "status": ""
+        },
+        {
+          "police_station": "අපාර",
+          "date": "",
+          "time": "",
+          "location": "",
+          "victim": {
+            "name": "",
+            "age": "",
+            "gender": "",
+            "occupation": "",
+            "address": "",
+            "phone": ""
+          },
+          "suspect": {
+            "name": "",
+            "age": "",
+            "gender": "",
+            "occupation": "",
+            "address": "",
+            "phone": ""
+          },
+          "description": "ඉගිණියාගල  1840 කොට්ඨාශය අපාර 20",
+          "financial_loss": "",
+          "status": ""
+        }
+      ],
+      "summary": {
+        "total_incidents": 2,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "03": {
+      "category_number": "03",
+      "category_name": "උද්ඝෝෂණ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "04": {
+      "category_number": "04",
+      "category_name": "මිනීමැරීම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "05": {
+      "category_number": "05",
+      "category_name": "කොල්ලකෑම / අවි ආයුධ මගින් කොල්ලකෑම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "06": {
+      "category_number": "06",
+      "category_name": "වාහන සොරකම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "07": {
+      "category_number": "07",
+      "category_name": "දේපළ සොරකම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "08": {
+      "category_number": "08",
+      "category_name": "ගෙවල් බිඳ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "09": {
+      "category_number": "09",
+      "category_name": "ස්ත්‍රී දූෂණ හා බරපතල ලිංගික අපයෝජන",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "10": {
+      "category_number": "10",
+      "category_name": "මාර්ග රිය අනතුරු",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "11": {
+      "category_number": "11",
+      "category_name": "නාදුනන මළ සිරුරු හා සැක්සහිත මරණ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "12": {
+      "category_number": "12",
+      "category_name": "පොලිස් රිය අනතුරු",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "13": {
+      "category_number": "13",
+      "category_name": "පොලිස් නිලධාරීන්ට තුවාල සිදුවීම සහ පොලිසිය සම්බන්ධ සිදුවීම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "14": {
+      "category_number": "14",
+      "category_name": "පොලිස් නිලධාරීන්ගේ විෂමාචාර ක්‍රියා",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "15": {
+      "category_number": "15",
+      "category_name": "පොලිස් නිලධාරීන් මියයෑ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "16": {
+      "category_number": "16",
+      "category_name": "රාජ්‍ය නිෂේධිත නිලධාරීන් රෝහල් ගතවී",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "17": {
+      "category_number": "17",
+      "category_name": "රාජ්‍ය නිෂේධිත නිලධාරීන්ගේ ළඟම ඥාතීන් මියයෑ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "18": {
+      "category_number": "18",
+      "category_name": "විශ්‍රාමික රාජ්‍ය නිෂේධිත නිලධාරීන්ගේ ළඟම ඥාතීන් මියයෑ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "19": {
+      "category_number": "19",
+      "category_name": "නිවාඩු ලබා සිටින සෙය.නිපොප නි.පො.ප වරුන්",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "20": {
+      "category_number": "20",
+      "category_name": "විශාල ප්‍රමාණයේ මත් ද්‍රව්‍ය/මත්පැන් අත්අඩංගුට ගැනී",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "21": {
+      "category_number": "21",
+      "category_name": "අත්අඩංගුට ගැනී",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "22": {
+      "category_number": "22",
+      "category_name": "ත්‍රිවිධ හමුදා සාමාජිකයින්ගේ අපරාධ, විෂමාචාර ක්‍රියා හා අත්අඩංගුට ගැනී",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "23": {
+      "category_number": "23",
+      "category_name": "අතුරුදහන්වී",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "24": {
+      "category_number": "24",
+      "category_name": "සියදිවි හානිකර ගැනී",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "25": {
+      "category_number": "25",
+      "category_name": "විදේශ සාමිකයින් සම්බන්ධ සිදුවීම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "26": {
+      "category_number": "26",
+      "category_name": "වනඅලි පහරදී හා වනඅලි මියයෑ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "27": {
+      "category_number": "27",
+      "category_name": "දියේ ගිලී මියයෑ",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "28": {
+      "category_number": "28",
+      "category_name": "ගිනි ගැනීම සම්බන්ධ සිදුවීම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    },
+    "29": {
+      "category_number": "29",
+      "category_name": "වෙනත් විශේෂ සිදුවීම",
+      "incidents": [],
+      "summary": {
+        "total_incidents": 0,
+        "resolved": 0,
+        "unresolved": 0
+      }
+    }
+  },
+  "metadata": {
+    "extraction_date": "2026-03-28T18:58:26.844936",
+    "total_categories": 29,
+    "categories_with_incidents": 1
+  }
+}
