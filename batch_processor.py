@@ -148,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--input", default="uploads", help="Input directory with PDFs")
     parser.add_argument("--output", default=None, help="Output directory (default: input/sinhala)")
     parser.add_argument("--ai", action="store_true", help="Use AI structuring (default: regex only)")
-    parser.add_argument("--engine", default="deepseek", choices=["deepseek", "claude", "gemini", "openrouter"], help="AI engine to use")
+    parser.add_argument("--engine", default="deepseek", choices=["deepseek", "claude", "gemini", "openrouter", "fastapi", "github", "groq"], help="AI engine to use")
     parser.add_argument("--api-key", default=None, help="API key for AI engine")
     
     args = parser.parse_args()

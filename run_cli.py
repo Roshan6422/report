@@ -191,7 +191,7 @@ if __name__ == "__main__":
     parser.add_argument("file", help="Path to English report text file")
     parser.add_argument("--use_ai", action="store_true", help="Use AI for structuring")
     parser.add_argument("--api_key", default="", help="AI API Key")
-    parser.add_argument("--engine", default="deepseek", choices=["deepseek", "claude"], help="AI engine choice")
+    parser.add_argument("--engine", default="deepseek", choices=["deepseek", "claude", "fastapi", "github", "groq"], help="AI engine choice")
     args = parser.parse_args()
     
     if os.path.exists(args.file):

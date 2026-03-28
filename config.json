@@ -13,7 +13,13 @@
     "cache_ttl_hours": 24
   },
   "ai_engines": {
-    "default": "openrouter",
+    "default": "fastapi",
+    "fastapi": {
+      "enabled": true,
+      "provider": "github",
+      "model": "gpt-4o-mini",
+      "timeout": 120
+    },
     "openrouter": {
       "enabled": true,
       "model": "deepseek/deepseek-r1:free",
