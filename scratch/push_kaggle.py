@@ -1,6 +1,6 @@
 import json
 import os
-import shutil
+
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 # Paths
@@ -12,7 +12,7 @@ META_PATH = os.path.join(DEPLOY_DIR, "kernel-metadata.json")
 
 # 1. Aggressive ASCII Encoding for Notebook
 # This bypasses the Windows cp1252/utf-8 mismatch in Kaggle library
-with open(NB_SOURCE, "r", encoding="utf-8") as f:
+with open(NB_SOURCE, encoding="utf-8") as f:
     nb_data = json.load(f)
 
 # Use ensure_ascii=True to convert all non-ASCII to \uXXXX

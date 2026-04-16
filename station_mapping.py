@@ -566,7 +566,7 @@ def get_institutional_prompt_snippet():
     snippet = "SRI LANKA POLICE INSTITUTIONAL TERMINOLOGY (Official Mappings):\n"
     # Select a relevant subset or full list depending on prompt size constraints
     # For now, let's include the full Sinhala_to_English mapping but limit counts to avoid bloat
-    for sin, eng in list(SINHALA_TO_ENGLISH.items())[:300]: 
+    for sin, eng in list(SINHALA_TO_ENGLISH.items())[:300]:
         snippet += f"- {sin} -> {eng}\n"
     return snippet
 
@@ -575,7 +575,7 @@ def enforce_terminology(text):
     """Enforce standard English station names via regex and phonetic alias mapping."""
     if not text: return text
     processed = text
-    
+
     # 1. Handle common phonetic mismatches that AI often makes
     PHONETIC_ALIASE_MAP = {
         "Meegamuwa": "NEGOMBO",
@@ -584,9 +584,9 @@ def enforce_terminology(text):
         "Mahanuwara": "KANDY",
         "Madakalapuwa": "BATTICALOA",
         "Yapanaya": "JAFFNA",
-        "Trincomalee": "TRINCOMALEE", 
+        "Trincomalee": "TRINCOMALEE",
     }
-    
+
     for phonetic, official in PHONETIC_ALIASE_MAP.items():
         pattern = re.compile(re.escape(phonetic), re.IGNORECASE)
         processed = pattern.sub(official, processed)
@@ -597,12 +597,13 @@ def enforce_terminology(text):
         if not eng or len(eng) < 3: continue
         pattern = re.compile(r'\b' + re.escape(eng) + r'\b', re.IGNORECASE)
         processed = pattern.sub(eng.upper(), processed)
-        
+
     return processed
 
 
 import difflib
 import re
+
 
 def get_station_info(station_name):
     """Look up station info, return dict or default."""
@@ -612,16 +613,16 @@ def get_station_info(station_name):
     info = STATION_MAP.get(station_name)
     if info:
         return info
-        
+
     # Standardize input for fuzzy matching
     st_clean = re.sub(r'(?i)\b(?:Special Investigation Unit|North|South|East|West|Central|HQ|Post|Police|Station)\b', '', str(station_name))
     st_clean = re.sub(r'[,.\s]+', ' ', st_clean).strip()
-        
+
     # Try exact substring match first (most reliable)
     for key in STATION_MAP:
         if key.lower() in str(station_name).lower() or str(station_name).lower() in key.lower():
             return STATION_MAP[key]
-            
+
     # Try fuzzy match (resolves spelling errors like Ambalipitiya -> Embilipitiya / Ambalantota)
     if st_clean:
         # Increase n=3 to allow more candidates and check closely
@@ -629,6 +630,6 @@ def get_station_info(station_name):
         if matches:
             # Pick the best match but only if it's statistically significant
             return STATION_MAP[matches[0]]
-            
+
     # Default Fallback (Institutional: Do not guess Western Province if unknown)
     return {"province": "UNKNOWN DISTRICT", "dig": f"DIG {station_name}", "div": f"{station_name} Div."}

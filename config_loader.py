@@ -7,9 +7,9 @@ def get_config():
     """Reads and returns the project configuration from config.json."""
     if not os.path.exists(CONFIG_PATH):
         return {}
-    
+
     try:
-        with open(CONFIG_PATH, "r") as f:
+        with open(CONFIG_PATH) as f:
             return json.load(f)
     except Exception as e:
         print(f"[config_loader] Error reading config: {e}")

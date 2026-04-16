@@ -1,7 +1,10 @@
 import os
 from datetime import datetime
+
 from docxtpl import DocxTemplate
-from police_patterns import GENERAL_SECTIONS, SECURITY_SECTIONS, PROVINCE_LIST
+
+from police_patterns import GENERAL_SECTIONS, PROVINCE_LIST, SECURITY_SECTIONS
+
 
 class WordReportEngine:
     """
@@ -12,7 +15,7 @@ class WordReportEngine:
         self.templates_dir = templates_dir
         self.gen_template_path = None
         self.sec_template_path = None
-        
+
         # Find templates in the directory (General and Security)
         if os.path.exists(templates_dir):
             for f in os.listdir(templates_dir):
@@ -22,7 +25,7 @@ class WordReportEngine:
                     self.gen_template_path = os.path.join(templates_dir, f)
                 elif "security" in low_f and (f.endswith(".dotx") or f.endswith(".docx")):
                     self.sec_template_path = os.path.join(templates_dir, f)
-        
+
         if not self.gen_template_path: print(f"  [Word] Warning: No General template found in {templates_dir}")
         else: print(f"  [Word] Found General template: {self.gen_template_path}")
         if not self.sec_template_path: print(f"  [Word] Warning: No Security template found in {templates_dir}")
@@ -55,28 +58,28 @@ class WordReportEngine:
         if not date_range:
             current_date = datetime.now().strftime('%d %B %Y')
             date_range = f"From 0400 hrs. on {current_date} to 0400 hrs. on {current_date}"
-        
+
         # Initialize sections map
         sections_map = {t: {"title": t, "provinces": self._get_province_structure()} for t in sections_list}
-        
+
         for cat_num, data in category_results.items():
             if not str(cat_num).isdigit():
                 continue
-            
+
             num = int(cat_num)
             raw_incidents = data.get("raw_incidents", [])
             if not raw_incidents:
                 continue
-            
+
             for inc in raw_incidents:
                 origin = inc.get("origin_block", "General")
-                
+
                 # Safety net: categories 01/02/03 always Security
                 if num in [1, 2, 3]:
                     origin = "Security"
-                
+
                 target_section_title = None
-                
+
                 # SECURITY REPORT MAPPING
                 if is_security:
                     if origin == "Security":
@@ -85,11 +88,11 @@ class WordReportEngine:
                         elif num == 2: target_section_title = SECURITY_SECTIONS[2]
                         else: target_section_title = SECURITY_SECTIONS[3]
                     else: continue # Skip general incidents in security report
-                
+
                 # GENERAL REPORT MAPPING
                 else:
                     if origin == "Security": continue # Skip security incidents in general report
-                    
+
                     if num in [4, 5, 6, 7, 8]: target_section_title = GENERAL_SECTIONS[0] # 01. SERIOUS CRIMES
                     elif num == 9: target_section_title = GENERAL_SECTIONS[1] # 02. RAPE / ABUSE
                     elif num == 10: target_section_title = GENERAL_SECTIONS[2] # 03. FATAL ACCIDENTS
@@ -106,7 +109,7 @@ class WordReportEngine:
                         else:
                             target_section_title = GENERAL_SECTIONS[6] # 07. POLICE INJURY/DEATH
                     else: target_section_title = GENERAL_SECTIONS[9] # 10. OTHER
-                
+
                 if not target_section_title:
                     continue
 
@@ -118,7 +121,7 @@ class WordReportEngine:
                     "reference": str(inc.get("ctm", inc.get("otm", inc.get("ir", "")))).strip(),
                     "province": str(inc.get("province", "WESTERN")).upper()
                 }
-                
+
                 # Find correct province bucket
                 p_base = entry["province"].upper()
                 placed = False
@@ -128,7 +131,7 @@ class WordReportEngine:
                         p_struct["nil"] = False
                         placed = True
                         break
-                
+
                 if not placed:
                     # Fallback to Western
                     for p_struct in sections_map[target_section_title]["provinces"]:
@@ -136,7 +139,7 @@ class WordReportEngine:
                             p_struct["incidents"].append(entry)
                             p_struct["nil"] = False
                             break
-                            
+
         # Final context
         return {
             "date_range": date_range,
@@ -161,7 +164,7 @@ class WordReportEngine:
                 with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tf:
                     temp_name = tf.name
                 self._convert_to_docx_format(self.gen_template_path, temp_name)
-                
+
                 try:
                     tpl = DocxTemplate(temp_name)
                     ctx = self._prepare_context(category_results, GENERAL_SECTIONS, is_security=False)
@@ -183,7 +186,7 @@ class WordReportEngine:
                 with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tf:
                     temp_name = tf.name
                 self._convert_to_docx_format(self.sec_template_path, temp_name)
-                
+
                 try:
                     tpl = DocxTemplate(temp_name)
                     ctx = self._prepare_context(category_results, SECURITY_SECTIONS, is_security=True)

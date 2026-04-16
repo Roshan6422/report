@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tesseract OCR: default is balanced speed (2 preprocess × 2 PSM). Set TESSERACT_FULL_OCR=1
 for 4×3 max-recall passes. TESSERACT_FAST=1 is single-pass (fastest, lowest recall).
@@ -7,10 +6,9 @@ for 4×3 max-recall passes. TESSERACT_FAST=1 is single-pass (fastest, lowest rec
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 from PIL import Image

@@ -6,16 +6,22 @@ process_and_translate.py — Institutional 4-Stage Pipeline
 4. Institutional PDF Generation
 """
 
-import os
 import json
-import traceback
+import os
 from datetime import datetime
+
+import police_geo_utils
 from ai_engine_manager import get_engine
 from general_report_engine import generate_general_report, html_to_pdf
+from police_patterns import (
+    GENERAL_SECTIONS,
+    SECURITY_SECTIONS,
+)
+from station_mapping import (
+    enforce_terminology,
+    get_institutional_prompt_snippet,
+)
 from web_report_engine_v2 import generate_security_report
-from police_patterns import OFFICIAL_CASE_TABLE_CATEGORIES, GENERAL_SECTIONS, SECURITY_SECTIONS
-import police_geo_utils
-from station_mapping import get_institutional_prompt_snippet, SINHALA_TO_ENGLISH, enforce_terminology
 
 # English Province exact names used in rendering
 OFFICIAL_PROVINCE_ORDER = [
@@ -35,7 +41,7 @@ def load_routing_rules():
     """Load rules for Ollama routing."""
     r_path = os.path.join("rules", "routing_rules.md")
     if os.path.exists(r_path):
-        with open(r_path, "r", encoding="utf-8") as f:
+        with open(r_path, encoding="utf-8") as f:
             return f.read()
     return "Route incident to Security or General based on its nature."
 
@@ -44,7 +50,7 @@ def load_translation_rules(report_type="General"):
     filename = "security_rules.md" if report_type == "Security" else "general_rules.md"
     rules_path = os.path.join("rules", filename)
     if os.path.exists(rules_path):
-        with open(rules_path, "r", encoding="utf-8") as f:
+        with open(rules_path, encoding="utf-8") as f:
             return f.read()
     return "Translate to professional English narrative."
 
@@ -53,13 +59,13 @@ def translate_incident(incident_dict, engine_mgr, restricted=None):
     st_raw = incident_dict.get('police_station', '')
     desc_raw = incident_dict.get('description', '')
     date_raw = incident_dict.get('date', '')
-    
+
     # Load all rules to give AI full context of styles
     gen_rules = load_translation_rules("General")
     sec_rules = load_translation_rules("Security")
-    
+
     print(f"    [Ollama/Kaggle] Translating {st_raw}...")
-    
+
     prompt = f"""INSTRUCTIONS:
 Translate the Sinhala incident into professional English narrative. 
 Strictly follow the institutional styles below. 
@@ -82,12 +88,12 @@ DESCRIPTION: {desc_raw}
 {get_institutional_prompt_snippet()}
 
 Result paragraph:"""
-    
+
     system_instr = "You are an Expert Sri Lanka Police Translator. You translate with 100% fidelity. You NEVER repeat phrases. One narrative only."
-    
+
     try:
         translated = engine_mgr.call_ai(prompt, system_prompt=system_instr, restricted_list=restricted)
-        
+
         # Structure it
         geo = police_geo_utils.get_geo_info(st_raw)
         prov = (geo.get("province") or "UNKNOWN").strip()
@@ -114,15 +120,15 @@ def process_and_translate(data, filename, app_config_folder):
     engine_mgr = get_engine()
     cloud_restricted = ["gemini", "github", "aimlapi", "groq", "openrouter"]
     ollama_only = ["ollama"]
-    
+
     r_rules = load_routing_rules()
     t_rules = load_translation_rules("General") # Default rules
-    
+
     security_pool = []
     general_pool = []
-    
+
     # 1. CATEGORIZATION (Already partially done in extraction, but we ensure all incidents are listed)
-    print(f"📂 [Stage 1] Gathering all incidents from categorized data...")
+    print("📂 [Stage 1] Gathering all incidents from categorized data...")
     all_incidents = []
     for cat_num, cat_data in data.get("categories", {}).items():
         for inc in cat_data.get("incidents", []):
@@ -130,7 +136,7 @@ def process_and_translate(data, filename, app_config_folder):
             all_incidents.append(inc)
 
     # 2. TRANSLATION (OLLAMA/KAGGLE - COST EFFECTIVE)
-    print(f"📑 [Stage 2] High-Fidelity Translation (Ollama/Kaggle)...")
+    print("📑 [Stage 2] High-Fidelity Translation (Ollama/Kaggle)...")
     translated_incidents = []
     for inc in all_incidents:
         # Use Ollama for translation to save cloud tokens
@@ -138,14 +144,14 @@ def process_and_translate(data, filename, app_config_folder):
         if t_inc:
             t_inc["body"] = enforce_terminology(t_inc["body"])
             translated_incidents.append(t_inc)
-            
+
     # 3. INTELLIGENT ROUTING (CLOUD AI - MAXIMUM INTELLIGENCE)
-    print(f"🏹 [Stage 3] Intelligent Routing into Security/General (GitHub/Cloud AI)...")
+    print("🏹 [Stage 3] Intelligent Routing into Security/General (GitHub/Cloud AI)...")
     for t_inc in translated_incidents:
         print(f"    [Cloud AI] Routing {t_inc['station']}...")
         r_prompt = f"RULES:\n{r_rules}\n\nREPORT SEGMENT:\nStation: {t_inc['station']}\nBody: {t_inc['body']}\n\nDecision?"
         r_res = engine_mgr.call_ai(r_prompt, system_prompt="Institutional Intelligence Router", restricted_list=cloud_restricted)
-        
+
         try:
             # Clean JSON if wrapped in markdown
             if "{" in r_res:
@@ -161,11 +167,11 @@ def process_and_translate(data, filename, app_config_folder):
             general_pool.append(t_inc) # Fallback
 
     # 4. REPORT GENERATION (MAPPING & PDF)
-    print(f"📊 [Stage 4] Generating Final Reports...")
-    
+    print("📊 [Stage 4] Generating Final Reports...")
+
     gen_matrix = {sec: [] for sec in GENERAL_SECTIONS}
     sec_matrix = {sec: [] for sec in SECURITY_SECTIONS}
-    
+
     G = GENERAL_SECTIONS
     S = SECURITY_SECTIONS
 
@@ -200,14 +206,14 @@ def process_and_translate(data, filename, app_config_folder):
             target_section = S[2]
 
         sec_matrix[target_section].append(inc)
-        
+
     # Build Output Folders
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_base = os.path.join(app_config_folder, "outputs", timestamp)
     os.makedirs(output_base, exist_ok=True)
-    
+
     date_range = data.get("header", {}).get("report_period", "Daily Incident Report")
-    
+
     # Helper for formatting report payload
     def format_report_payload(matrix, official_order):
         sections = []
@@ -237,19 +243,19 @@ def process_and_translate(data, filename, app_config_folder):
     gen_pdf = os.path.join(output_base, "General_Report.pdf")
     generate_general_report(gen_data, gen_html)
     html_to_pdf(gen_html, gen_pdf)
-    
+
     # Generate Security PDF
     sec_data = format_report_payload(sec_matrix, SECURITY_SECTIONS)
     sec_html = os.path.join(output_base, "Security_Report.html")
     sec_pdf = os.path.join(output_base, "Security_Report.pdf")
     generate_security_report(sec_data, sec_html)
     html_to_pdf(sec_html, sec_pdf)
-    
+
     print(f"✅ Full Institutional Cycle Complete. PDFs in: {output_base}")
     return {
-        "success": True, 
-        "files": [gen_pdf, sec_pdf], 
-        "output_dir": output_base, 
+        "success": True,
+        "files": [gen_pdf, sec_pdf],
+        "output_dir": output_base,
         "timestamp": timestamp,
         "general_pool": len(general_pool),
         "security_pool": len(security_pool)

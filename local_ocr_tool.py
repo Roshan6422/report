@@ -8,10 +8,11 @@ Sinhala PDF OCR Tool - Optimized Edition
 
 import os
 import sys
-import re
-from PIL import Image, ImageEnhance, ImageFilter
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from PIL import Image, ImageEnhance, ImageFilter
+
 from config_loader import get_config
 
 # ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
@@ -42,10 +43,11 @@ KAGGLE_OCR_URL = os.getenv("KAGGLE_OCR_URL", _kaggle_url_default)
 
 #
 
+import io
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import io
 
 # Setup a persistent session for stability over ngrok/Windows sockets
 _session = requests.Session()
@@ -202,14 +204,14 @@ def _surya_api_page(image: Image.Image) -> str:
         img_byte_arr = io.BytesIO()
         image.save(img_byte_arr, format='JPEG', quality=75) # Lowered for smaller upload payload
         img_byte_arr.seek(0)
-        
+
         # Send to API via persistent session
         files = {'file': ('page.jpg', img_byte_arr, 'image/jpeg')}
         headers = {"ngrok-skip-browser-warning": "true"}
-        
+
         # We use the session with built-in retries
         response = _session.post(KAGGLE_OCR_URL, files=files, headers=headers, timeout=300)
-        
+
         if response.status_code == 200:
             data = response.json()
             if data.get("success"):
@@ -222,23 +224,23 @@ def _surya_api_page(image: Image.Image) -> str:
                 srv_data = response.json()
                 err = srv_data.get("error", "Internal Server Error")
                 print(f"[Surya API] ?????? Kaggle Crash: {err}")
-            except:
-                print(f"[Surya API] ?????? HTTP 500: Check Kaggle console.")
+            except Exception:
+                print("[Surya API] ?????? HTTP 500: Check Kaggle console.")
         else:
             print(f"[Surya API] HTTP Error: {response.status_code}")
     except Exception as e:
         # Handle the specific 10053 error with a helpful message
         if "10053" in str(e):
-            print(f"[Surya API] ??????? Connection aborted by local PC (Error 10053). Retrying sequentially...")
+            print("[Surya API] ??????? Connection aborted by local PC (Error 10053). Retrying sequentially...")
         else:
             print(f"[Surya API] Request failed: {e}")
-            
+
     return ""
 
 def extract_text_surya_api(images: list, progress_callback=None) -> list:
     total = len(images)
     results = [""] * total
-    
+
     def process(args):
         idx, img = args
         if progress_callback:
@@ -274,7 +276,7 @@ def extract_text_from_pdf(pdf_path: str, language: str = "sin",
     # ?????? Surya (GPU) Engine First ???????????????????????????????????????
     print(f"[OCR] Trying GPU Fast API: {KAGGLE_OCR_URL}")
     gpu_results = extract_text_surya_api(images, progress_callback=progress_callback)
-    
+
     # Check if GPU OCR actually succeeded (meaning at least some text was extracted)
     if any(len(p.strip()) > 10 for p in gpu_results):
         print("[OCR] ??? Successfully extracted via Kaggle GPU!")

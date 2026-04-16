@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Sinhala document helpers for the desktop pipeline.
 README / desktop_pipeline.process_pdf_sinhala_split_then_translate expect this module.
@@ -7,7 +6,6 @@ README / desktop_pipeline.process_pdf_sinhala_split_then_translate expect this m
 from __future__ import annotations
 
 import re
-from typing import Tuple
 
 # Likely section headers for the Security half of a dual (General + Security) daily report.
 _SECURITY_HEADER_RES = (
@@ -25,7 +23,7 @@ _SECURITY_HEADER_RES = (
 )
 
 
-def split_sinhala_document(text: str) -> Tuple[str, str]:
+def split_sinhala_document(text: str) -> tuple[str, str]:
     """
     Split a full Sinhala police daily report into (general_part, security_part).
 

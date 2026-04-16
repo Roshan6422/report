@@ -1,9 +1,8 @@
-import os
 import torch
-from unsloth import FastLanguageModel
-from trl import SFTTrainer
-from transformers import TrainingArguments
 from datasets import load_dataset
+from transformers import TrainingArguments
+from trl import SFTTrainer
+from unsloth import FastLanguageModel
 
 # Configuration
 MODEL_NAME = "unsloth/gemma-2-9b-it-bnb-4bit" # Base model
@@ -22,7 +21,7 @@ INSTITUTIONAL_CATEGORIES = {
 
 def train():
     print("🚀 [Training] Starting Master Police AI Fine-tuning...")
-    
+
     # 1. Load Model and Tokenizer
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name = MODEL_NAME,
@@ -89,11 +88,11 @@ def train():
     # 6. Export to GGUF
     print("📦 [Export] Saving to GGUF format for Ollama...")
     model.save_pretrained_gguf(
-        "police-ai-master-gguf", 
-        tokenizer, 
+        "police-ai-master-gguf",
+        tokenizer,
         quantization_method = "q4_k_m"
     )
-    
+
     print("✅ [Success] Fine-tuning complete! 'police-ai-master-gguf' is ready.")
 
 if __name__ == "__main__":

@@ -1,7 +1,5 @@
-import sqlite3
 import os
-import json
-from datetime import datetime
+import sqlite3
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(_BASE_DIR, "police_reports.db")
@@ -17,9 +15,9 @@ def init_db():
     """Initializes the database using the schema.sql file."""
     if not os.path.exists(DB_PATH):
         print(f"  [DB] Creating database at {DB_PATH}...")
-        
+
     conn = get_connection()
-    with open(SCHEMA_PATH, "r") as f:
+    with open(SCHEMA_PATH) as f:
         conn.executescript(f.read())
     conn.commit()
     conn.close()
@@ -35,7 +33,7 @@ def save_report(filename, report_date, report_type, raw_hash):
     if res:
         conn.close()
         return res[0]
-        
+
     cursor.execute(
         "INSERT INTO reports (filename, report_date, report_type, raw_hash) VALUES (?, ?, ?, ?)",
         (filename, report_date, report_type, raw_hash)

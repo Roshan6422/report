@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Split combined English narratives and route incidents to the correct institutional
 28-category buckets so General vs Security PDFs receive the right written format.
@@ -295,9 +294,9 @@ def apply_institutional_incident_routing(category_summary: dict[str, Any]) -> di
     out["date_range"] = meta_date
 
     # If a custom table_counts was provided (e.g. from the manual dashboard), preserve it fully!
-    if "table_counts" in category_summary and category_summary["table_counts"]:
+    if category_summary.get("table_counts"):
         out["table_counts"] = category_summary["table_counts"]
     else:
         out["table_counts"] = {k: out[k]["count"] for k in out if k not in ("date_range", "table_counts")}
-        
+
     return out

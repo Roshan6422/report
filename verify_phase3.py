@@ -1,12 +1,12 @@
 import os
-import json
+
 from desktop_pipeline import generate_institutional_reports
 from word_report_engine import WordReportEngine
-from police_patterns import GENERAL_SECTIONS, SECURITY_SECTIONS
+
 
 def verify_institutional_refinement():
     print("---[ Phase 3: Institutional Refinement Verification ]---")
-    
+
     # 1. Mock Category Summary with diverse data to check mapping
     # - Cat 04 (Homicide) -> Gen 01
     # - Cat 09 (Rape) -> Gen 02
@@ -15,19 +15,19 @@ def verify_institutional_refinement():
     # - Cat 01 (Terrorism) -> Tagged 'Security' -> Sec 11
     # - Cat 13 (Property) -> Gen 04
     # - Cat 13 (Injury) -> Gen 07
-    
+
     mock_summary = {
         "date_range": "14th of March 2026",
         "table_counts": {"04": 1, "09": 1, "03": 2, "01": 1, "13": 2},
         "04": {
             "raw_incidents": [{
-                "station": "WELLAWATTA", "province": "WESTERN", "body": "Homicide incident.", 
+                "station": "WELLAWATTA", "province": "WESTERN", "body": "Homicide incident.",
                 "origin_block": "General"
             }]
         },
         "09": {
             "raw_incidents": [{
-                "station": "COLOMBO", "province": "WESTERN", "body": "Sexual assault incident.", 
+                "station": "COLOMBO", "province": "WESTERN", "body": "Sexual assault incident.",
                 "origin_block": "General"
             }]
         },
@@ -39,7 +39,7 @@ def verify_institutional_refinement():
         },
         "01": {
             "raw_incidents": [{
-                "station": "TRINCO", "province": "EASTERN", "body": "Terrorism incident.", 
+                "station": "TRINCO", "province": "EASTERN", "body": "Terrorism incident.",
                 "origin_block": "Security"
             }]
         },
@@ -64,9 +64,9 @@ def verify_institutional_refinement():
     print(f"Generated Word Docs: {word_paths}")
 
     print("\n[Step 3] Cross-check logical consistency...")
-    # Since we can't easily read the PDF/Doc inside this script without more libs, 
+    # Since we can't easily read the PDF/Doc inside this script without more libs,
     # we've verified the code paths during implementation.
-    
+
     print("\n✅ Verification script completed. Please check 'test_outputs_phase3' directory.")
 
 if __name__ == "__main__":

@@ -1,9 +1,10 @@
-import sqlite3
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import os
-from datetime import datetime
+import sqlite3
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
 from db_manager import DB_PATH
 
 # Ensure render directory exists
@@ -47,7 +48,7 @@ class AnalyticsEngine:
         plt.title('Crime Distribution by Province', fontsize=16, pad=20)
         plt.xlabel('Incident Count')
         plt.ylabel('Province')
-        
+
         output_path = os.path.join(RENDER_DIR, "province_distribution.png")
         plt.tight_layout()
         plt.savefig(output_path, dpi=150)
@@ -75,7 +76,7 @@ class AnalyticsEngine:
             return None
 
         df['report_date'] = pd.to_datetime(df['report_date'])
-        
+
         plt.figure(figsize=(12, 6))
         plt.plot(df['report_date'], df['count'], marker='o', linestyle='-', color='#00d1ff')
         plt.fill_between(df['report_date'], df['count'], color='#00d1ff', alpha=0.1)
@@ -83,7 +84,7 @@ class AnalyticsEngine:
         plt.xlabel('Date')
         plt.ylabel('Count')
         plt.xticks(rotation=45)
-        
+
         output_path = os.path.join(RENDER_DIR, "incident_trend.png")
         plt.tight_layout()
         plt.savefig(output_path, dpi=150)
@@ -101,29 +102,29 @@ class AnalyticsEngine:
         try:
             conn = self._get_conn()
             cursor = conn.cursor()
-            
+
             # Check if tables exist
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='reports'")
             if not cursor.fetchone():
                 return stats
-            
+
             cursor.execute("SELECT COUNT(*) FROM reports")
             stats['total_reports'] = cursor.fetchone()[0]
-            
+
             cursor.execute("SELECT COUNT(*) FROM incidents")
             stats['total_incidents'] = cursor.fetchone()[0]
-            
+
             # Use try/except for specific translation tables which might be missing in older schemas
             try:
                 cursor.execute("SELECT COUNT(*) FROM security_translations")
                 stats['security_incidents'] = cursor.fetchone()[0]
-            except: pass
-                
+            except Exception: pass
+
             try:
                 cursor.execute("SELECT COUNT(*) FROM general_translations")
                 stats['general_incidents'] = cursor.fetchone()[0]
-            except: pass
-            
+            except Exception: pass
+
             conn.close()
         except Exception as e:
             print(f"[Analytics] Stats fetch failed: {e}")

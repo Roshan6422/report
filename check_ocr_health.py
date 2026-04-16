@@ -1,6 +1,7 @@
 import os
-import sys
+
 import requests
+
 
 def check_health():
     print("=== POLICE AI - OCR HEALTH CHECK ===\n")
@@ -13,7 +14,7 @@ def check_health():
         res = requests.get(kaggle_url.split('/gpu-ocr')[0], timeout=5)
         print(f"   [OK] Kaggle tunnel is reachable (Status: {res.status_code})")
     except Exception as e:
-        print(f"   [ERROR] Kaggle tunnel unreachable. Please start your Kaggle Notebook.")
+        print("   [ERROR] Kaggle tunnel unreachable. Please start your Kaggle Notebook.")
         print(f"           Error type: {type(e).__name__}")
 
     # 2. Check Tesseract
@@ -22,7 +23,7 @@ def check_health():
     pytesseract = _get_pytesseract()
     cmd = pytesseract.pytesseract.tesseract_cmd
     print(f"   Configured Path: {cmd}")
-    
+
     if os.path.exists(cmd) or cmd == "tesseract":
         try:
             ver = pytesseract.get_tesseract_version()
@@ -30,8 +31,8 @@ def check_health():
         except Exception as e:
             print(f"   [ERROR] Tesseract found but not working: {e}")
     else:
-        print(f"   [ERROR] Tesseract not found at this path.")
-        print(f"           ACTION: Install Tesseract for Windows and add to PATH.")
+        print("   [ERROR] Tesseract not found at this path.")
+        print("           ACTION: Install Tesseract for Windows and add to PATH.")
 
     # 3. Check Folders
     print("\n3. Checking Data Folders:")

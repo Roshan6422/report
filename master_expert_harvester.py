@@ -1,8 +1,7 @@
-import os
-import sys
-import re
 import json
-import time
+import os
+import re
+import sys
 from datetime import datetime
 
 # Prevent Unicode Encode errors on Windows console with emojis
@@ -30,17 +29,17 @@ def parse_english_date(filename):
         day, month_str, year = match.group(1).zfill(2), match.group(2), match.group(3)
         try:
             return datetime.strptime(f"{day} {month_str} {year}", "%d %B %Y").strftime("%Y-%m-%d")
-        except: return None
+        except Exception: return None
     return None
 
 def main():
     print("[Expert-Harvester] Starting Batch Alignment...")
     engine = get_engine()
     os.makedirs(os.path.dirname(OUTPUT_DB), exist_ok=True)
-    
+
     sin_files = [f for f in os.listdir(SIN_DIR) if f.lower().endswith(".pdf")]
     eng_files = [f for f in os.listdir(ENG_DIR) if f.lower().endswith(".pdf")]
-    
+
     mapping = {}
     for sf in sin_files:
         d = parse_sinhala_date(sf)
@@ -54,16 +53,16 @@ def main():
             mapping[d]["eng"].append(os.path.join(ENG_DIR, ef))
 
     total_pairs = 0
-    
+
     # Sort by date to process oldest to newest
     for date in sorted(mapping.keys()):
         data = mapping[date]
         if not data["sin"] or not data["eng"]:
             print(f"  [Skip] Date {date} is missing one language.")
             continue
-            
+
         print(f"\n[Processing] Date: {date}")
-        
+
         # 1. Extract Sinhala Text
         sin_text = ""
         for sf in data["sin"]:
@@ -73,7 +72,7 @@ def main():
                 sin_text += "\n".join(pages)
             except Exception as e:
                 print(f"  ❌ OCR Fail: {e}")
-        
+
         # 2. Extract English Text
         eng_text = ""
         for ef in data["eng"]:
@@ -90,10 +89,10 @@ def main():
 
         # 3. AI Alignment (Chunking if needed)
         print("  [Aligning] Using AI Aligner...")
-        
+
         # We might need to chunk if the report is very long.
         # But for now, let's try a large context approach.
-        
+
         alignment_prompt = (
             "You are a Master Police Data Aligner. I will provide you with a full Sinhala report and its corresponding English reports.\n\n"
             "TASK:\n"
@@ -106,10 +105,10 @@ def main():
             f"--- SINHALA REPORT ---\n{sin_text[:15000]}\n\n"
             f"--- ENGLISH REPORTS ---\n{eng_text[:15000]}"
         )
-        
+
         # Use an intelligent teacher (Gemini or GitHub)
         res = engine.call_ai(alignment_prompt, system_prompt="Expert Alignment Architect", restricted_list=["gemini", "github"])
-        
+
         try:
             # Clean JSON
             match = re.search(r'\[.*\]', res, re.DOTALL)
@@ -124,7 +123,7 @@ def main():
                 print(f"  [Warning] No JSON alignment found for {date}.")
         except Exception as e:
             print(f"  [Error] Alignment Error: {e}")
-            
+
     print(f"\n[Harvester] Done! Total expert pairs collected: {total_pairs}")
 
 if __name__ == "__main__":

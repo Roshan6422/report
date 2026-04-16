@@ -1,21 +1,28 @@
-import os
-import sys
-import requests
 import json
-import time
-import threading
+import os
 import re
-from datetime import datetime
-from json_repair_tool import repair_json, validate_incident_schema
-from station_mapping import get_station_info
-from quota_manager import get_quota_mgr
+import sys
+import threading
+import time
 
-from api_keys import load_env, get_gemini_keys, get_github_keys, get_openrouter_key, get_aimlapi_keys, get_groq_keys
-from machine_translator import _gemini_generate_models, sanitize_police_translation_output
-from models import IncidentRecord, CategorizationOutput
-from ai_providers import GitHubProvider, GeminiProvider, OllamaProvider
+import requests
+
+from ai_providers import GeminiProvider, GitHubProvider, OllamaProvider
+from typing import ClassVar
+from api_keys import (
+    get_aimlapi_keys,
+    get_gemini_keys,
+    get_github_keys,
+    get_groq_keys,
+    get_openrouter_key,
+    load_env,
+)
 from config_loader import get_config
+from json_repair_tool import repair_json
 from knowledge_loader import ExpertKnowledgeLoader
+from models import IncidentRecord
+from quota_manager import get_quota_mgr
+from station_mapping import get_station_info
 
 # Ensure UTF-8 for Windows console
 if sys.platform == "win32":
@@ -140,7 +147,7 @@ class AIEngineManager:
     """Unified engine manager for GitHub, AIML API, Groq, OpenRouter, Gemini, and Ollama."""
 
     # Class-level set — persists across hot-reloads in dev servers
-    offline_engines: set = set()
+    offline_engines: ClassVar[set] = set()
 
     def __init__(self, mode="fast"):
         # Mode: "fast" (Direct Ollama), "triple" (Gemini -> Ollama), "consensus" (Ollama + Validator)
@@ -259,7 +266,7 @@ class AIEngineManager:
     # Ollama helpers
     # -----------------------------------------------------------------------
 
-    def set_ollama_preference(self, prefer_kaggle: bool, url: str = None, model: str = None):
+    def set_ollama_preference(self, prefer_kaggle: bool, url: str | None = None, model: str | None = None):
         """Update Ollama/Kaggle preferences at runtime."""
         if prefer_kaggle is not None:
             self.prefer_kaggle_ollama = prefer_kaggle
@@ -371,7 +378,7 @@ class AIEngineManager:
     # -----------------------------------------------------------------------
 
     def _dispatch_engine(self, engine: str, prompt: str, system_prompt: str, timeout: int,
-                         model_override: str = None) -> str:
+                         model_override: str | None = None) -> str:
         """Route to the correct modular provider."""
         if engine == "ollama":
             if not self.ollama_url:
@@ -475,9 +482,9 @@ class AIEngineManager:
     def call_ai(self, prompt: str,
                 system_prompt: str = "You are a professional police report assistant.",
                 timeout: int = 120,
-                restricted_list: list = None,
-                model_override: str = None,
-                category_context: str = None) -> str:
+                restricted_list: list | None = None,
+                model_override: str | None = None,
+                category_context: str | None = None) -> str:
         """
         Main AI dispatch with optional engine restrictions and model overrides.
         Fallback chain: Ollama → GitHub → AIMLAPI → Groq → OpenRouter → Gemini
@@ -546,7 +553,7 @@ class AIEngineManager:
                     print(f"  [AI] 🛡️ {base_eng} → UNAUTHORIZED (401). Marking OFFLINE.")
                     self.offline_engines.add(base_eng)
                 elif "500" in str(res) and base_eng == "ollama":
-                    print(f"  [AI] 🛡️ Ollama → 500 OVERLOAD. Marking OFFLINE until restart.")
+                    print("  [AI] 🛡️ Ollama → 500 OVERLOAD. Marking OFFLINE until restart.")
                     self.offline_engines.add(base_eng)
                 else:
                     self.failure_counts[base_eng] = self.failure_counts.get(base_eng, 0) + 1
@@ -632,7 +639,7 @@ class AIEngineManager:
                                                "You are the Sri Lanka Police Data Architect.", timeout)
 
         if final_json.startswith("❌"):
-            print(f"  ⚠️ Stage 2 Failed. Wrapping refined text as fallback JSON.")
+            print("  ⚠️ Stage 2 Failed. Wrapping refined text as fallback JSON.")
             return json.dumps({
                 "station": "Unknown", "division": "Unknown", "date": "", "time": "",
                 "description": refined_text, "financial_loss": "Nil",
@@ -836,7 +843,7 @@ class AIEngineManager:
 
             if res.status_code == 200:
                 data = res.json()
-                if "choices" in data and data["choices"]:
+                if data.get("choices"):
                     ch = data["choices"][0]
                     if ch.get("finish_reason") == "length":
                         print(f"  [GitHub] ⚠️ Truncated output for {model_name}. "
@@ -969,7 +976,7 @@ class AIEngineManager:
         return self._dispatch_engine("github", prompt, system_prompt, timeout)
 
     def _call_ollama(self, prompt: str, system_prompt: str, timeout: int,
-                     model_override: str = None) -> str:
+                     model_override: str | None = None) -> str:
         return self._dispatch_engine("ollama", prompt, system_prompt, timeout, model_override)
 
     # -----------------------------------------------------------------------
@@ -1004,7 +1011,7 @@ class AIEngineManager:
                                 headers=headers, json=payload, timeout=timeout)
             if res.status_code == 200:
                 data = res.json()
-                if "choices" in data and data["choices"]:
+                if data.get("choices"):
                     return data["choices"][0]["message"]["content"]
                 return "❌ OpenRouter returned no choices"
             if res.status_code == 401:

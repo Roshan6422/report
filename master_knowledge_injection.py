@@ -1,11 +1,11 @@
-import os
 import json
+import os
 
 DATASET_PATH = r"dataset/police_training_data.jsonl"
 
 def inject_master_knowledge():
     print("🚀 [Master-Train] Injecting Master AI Knowledge (No Cloud API required)...")
-    
+
     # 20+ High-Quality, Institutional Training Pairs (Sinhala -> Perfect JSON)
     master_samples = [
         {

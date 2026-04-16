@@ -5,7 +5,7 @@ PROVINCES_SINHALA = {
     "සබරගමුව": "Sabaragamuwa",
     "මධ්‍යම": "Central",
     "වයඹ": "North Western",
-    "උතුරු මැද": "North Central",  
+    "උතුරු මැද": "North Central",
     "ඌව": "Uva",
     "නැගෙනහිර": "Eastern",
     "උතුර": "Northern",
@@ -23,12 +23,12 @@ INCIDENT_TEMPLATES = {
 
 
 COMMON_PHRASES = {
-    
+
     "අත්අඩංගුවට": "arrested",
     "මරණය": "death",
-    "තුවාලයි": "injured",    
+    "තුවාලයි": "injured",
     "සැකකරු": "suspect",
-    "සැකකරුවන්": "suspects"  
+    "සැකකරුවන්": "suspects"
 }
 
 
@@ -59,7 +59,7 @@ KEYWORDS_SINHALA = {
     "HB & Theft": [
         "BURGLARY", "HOUSE BREAKING", "HOUSE BREAK-IN",
         "ENTERED THROUGH WINDOW",
-        "ගෙවල් බිදුම්", "ගෙබිදුම්"  
+        "ගෙවල් බිදුම්", "ගෙබිදුම්"
     ],
 
     "Rape & Sexual Abuse": [

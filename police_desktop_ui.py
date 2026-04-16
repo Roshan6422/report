@@ -1,20 +1,25 @@
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 import threading
-import tkinter as tk
-from tkinter import messagebox, filedialog
-import customtkinter as ctk
-from PIL import Image, ImageTk
-import pyperclip
+from tkinter import filedialog, messagebox
 
-from desktop_pipeline import process_pdf_hyper_hybrid, process_text_report, process_pdf_kaggle_cloud_hybrid
-from police_patterns import OFFICIAL_CASE_TABLE_CATEGORIES
-from api_keys import get_gemini_key_display, save_gemini_api_key, delete_gemini_api_keys
-from db_manager import get_recent_files
+import customtkinter as ctk
+import pyperclip
+from PIL import Image, ImageTk
+
 from ai_engine_manager import get_engine
 from analytics_engine import AnalyticsEngine
-import json
+from api_keys import delete_gemini_api_keys, get_gemini_key_display, save_gemini_api_key
+from db_manager import get_recent_files
+from desktop_pipeline import (
+    process_pdf_hyper_hybrid,
+    process_pdf_kaggle_cloud_hybrid,
+    process_text_report,
+)
+from police_patterns import OFFICIAL_CASE_TABLE_CATEGORIES
 
 # Configure appearance
 ctk.set_appearance_mode("Dark")
@@ -81,38 +86,38 @@ class PoliceDesktopApp(ctk.CTk):
         self.progress.grid(row=6, column=0, padx=20, pady=(10, 5), sticky="ew")
         self.progress.set(0)
 
-        self.status_label = ctk.CTkLabel(self.sidebar, text="Ready — Select a PDF", 
+        self.status_label = ctk.CTkLabel(self.sidebar, text="Ready — Select a PDF",
                                          font=ctk.CTkFont(size=11), text_color="#94a3b8",
                                          wraplength=180)
         self.status_label.grid(row=7, column=0, padx=20, pady=(0, 10))
 
         # Local Engine Status
-        self.ollama_status = ctk.CTkLabel(self.sidebar, text="🤖 Local AI Engine Ready", 
+        self.ollama_status = ctk.CTkLabel(self.sidebar, text="🤖 Local AI Engine Ready",
                                          font=ctk.CTkFont(size=10), text_color="#64748b",
                                          wraplength=180)
         self.ollama_status.grid(row=8, column=0, padx=20, pady=(5, 10))
-        
+
         # Update Ollama status on startup
         self.after(1000, self.update_ollama_status)
 
         # --- RECENT REPORTS SECTION ---
         ctk.CTkLabel(self.sidebar, text="🕒 Recent Reports", font=ctk.CTkFont(size=13, weight="bold"),
                      text_color="#38bdf8").grid(row=9, column=0, padx=20, pady=(15, 2), sticky="w")
-        
+
         self.recent_container = ctk.CTkFrame(self.sidebar, fg_color="#1e293b", corner_radius=6)
         self.recent_container.grid(row=10, column=0, padx=15, pady=5, sticky="nsew")
         self.recent_container.grid_columnconfigure(0, weight=1)
-        
+
         self.recent_scroll = ctk.CTkScrollableFrame(self.recent_container, height=180, fg_color="transparent")
         self.recent_scroll.pack(fill="both", expand=True, padx=2, pady=2)
-        
+
         # Initial population of recent reports
         self.after(1500, self.refresh_recent_reports)
 
         # API Status Section
         ctk.CTkLabel(self.sidebar, text="🌐 API Health", font=ctk.CTkFont(size=13, weight="bold"),
                      text_color="#94a3b8").grid(row=11, column=0, padx=20, pady=(15, 2), sticky="w")
-        
+
         self.api_status_box = ctk.CTkTextbox(self.sidebar, height=100, width=180, font=ctk.CTkFont(size=10),
                                               fg_color="#0f172a", text_color="#64748b", corner_radius=6)
         self.api_status_box.grid(row=12, column=0, padx=20, pady=5)
@@ -127,8 +132,8 @@ class PoliceDesktopApp(ctk.CTk):
         # --- SPEED SETTINGS ---
         self.speed_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.speed_frame.grid(row=14, column=0, padx=20, pady=(5, 5), sticky="ew")
-        
-        self.turbo_switch = ctk.CTkSwitch(self.speed_frame, text="⚡ Turbo Speed (Race)", 
+
+        self.turbo_switch = ctk.CTkSwitch(self.speed_frame, text="⚡ Turbo Speed (Race)",
                                           font=ctk.CTkFont(size=11),
                                           progress_color="#10b981",
                                           command=self.toggle_turbo_mode)
@@ -137,18 +142,18 @@ class PoliceDesktopApp(ctk.CTk):
             self.turbo_switch.select()
 
         # --- KAGGLE AI TOGGLE ---
-        self.kaggle_switch = ctk.CTkSwitch(self.sidebar, text="🌐 Disconnect Local (Kaggle)", 
+        self.kaggle_switch = ctk.CTkSwitch(self.sidebar, text="🌐 Disconnect Local (Kaggle)",
                                            font=ctk.CTkFont(size=11),
                                            progress_color="#38bdf8",
                                            command=self.toggle_kaggle_mode)
         self.kaggle_switch.grid(row=15, column=0, padx=20, pady=(5, 5), sticky="w")
-        
+
         # Load default from config
         try:
             from ai_engine_manager import get_engine
             if get_engine().prefer_kaggle_ollama:
                 self.kaggle_switch.select()
-        except:
+        except Exception:
             pass
 
         # Spacer
@@ -324,7 +329,7 @@ class PoliceDesktopApp(ctk.CTk):
         self.current_pdf = None
         self.generated_pdfs = []
         self.last_results = {}
-        
+
         # Analytics Engine
         self.analytics_engine = AnalyticsEngine()
         self.chart_refs = {} # To prevent GC
@@ -477,7 +482,7 @@ class PoliceDesktopApp(ctk.CTk):
         """Build compact 29-category dashboard cards."""
         for cat_name in OFFICIAL_CASE_TABLE_CATEGORIES:
             cat_num = cat_name.split(".")[0].strip()
-            
+
             row = ctk.CTkFrame(self.dash_frame, height=36)
             row.pack(fill="x", padx=8, pady=1)
 
@@ -487,7 +492,7 @@ class PoliceDesktopApp(ctk.CTk):
             lbl = ctk.CTkLabel(row, text=cat_name, font=ctk.CTkFont(size=12), anchor="w")
             lbl.pack(side="left", fill="x", expand=True, padx=5)
 
-            count_lbl = ctk.CTkLabel(row, text="—", text_color="#6b7280", 
+            count_lbl = ctk.CTkLabel(row, text="—", text_color="#6b7280",
                                      font=ctk.CTkFont(size=11, weight="bold"), width=80)
             count_lbl.pack(side="right", padx=10)
 
@@ -566,7 +571,7 @@ class PoliceDesktopApp(ctk.CTk):
             try:
                 mode = self.pipeline_mode_var.get()
                 sinhala_first = mode.startswith("2")
-                
+
                 if self.kaggle_switch.get() == 1:
                     print("  [UI] Switching to Kaggle + Cloud Hybrid Pipeline...")
                     result = process_pdf_kaggle_cloud_hybrid(
@@ -580,14 +585,14 @@ class PoliceDesktopApp(ctk.CTk):
                         fast_complete=True,
                         sinhala_first=sinhala_first,
                     )
-                    
+
                 if result and isinstance(result, dict):
                     self.after(0, lambda r=result: self._on_complete(r))
                 else:
                     self.after(0, lambda: self._on_error("Invalid result from processing pipeline"))
             except Exception as e:
                 import traceback
-                error_msg = f"{str(e)}\n{traceback.format_exc()}"
+                error_msg = f"{e!s}\n{traceback.format_exc()}"
                 print(f"[ERROR] Worker thread error: {error_msg}")
                 self.after(0, lambda m=str(e): self._on_error(m))
 
@@ -664,7 +669,7 @@ class PoliceDesktopApp(ctk.CTk):
             curr = self.progress.get()
             self.progress.set(min(0.9, curr + 0.05))
             return
-            
+
         self._update_cat(cat_num, data)
         self.last_results[cat_num] = data
 
@@ -733,13 +738,13 @@ class PoliceDesktopApp(ctk.CTk):
         # Add report buttons (pair General + Security when both paths exist)
         self.generated_pdfs = result.get("generated_pdfs", [])
         self.generated_words = result.get("generated_words", [])
-        
+
         all_generated = self.generated_pdfs + self.generated_words
-        
+
         # Filter by type for strategic button placement
         general_files = [p for p in all_generated if "General" in os.path.basename(p)]
         security_files = [p for p in all_generated if "Security" in os.path.basename(p)]
-        
+
         col = 0
         for f_path in general_files:
             ext = os.path.splitext(f_path)[1].lower()
@@ -806,7 +811,7 @@ class PoliceDesktopApp(ctk.CTk):
                 self.ollama_status.configure(text="🤖 Local AI Engine Ready", text_color="#10b981")
             else:
                 self.ollama_status.configure(text="⚠️ Local AI Engine Offline", text_color="#f59e0b")
-        except:
+        except Exception:
             self.ollama_status.configure(text="❌ Local AI Engine Missing", text_color="#ef4444")
 
     # =========================================================================
@@ -816,36 +821,35 @@ class PoliceDesktopApp(ctk.CTk):
         """Fetch and display the last 10 generated reports."""
         for widget in self.recent_scroll.winfo_children():
             widget.destroy()
-            
+
         try:
             recent_files = get_recent_files(limit=10)
             if not recent_files:
                 ctk.CTkLabel(self.recent_scroll, text="No history yet", font=ctk.CTkFont(size=10), text_color="#475569").pack(pady=10)
                 return
-                
+
             for finfo in recent_files:
                 fname = finfo["filename"]
                 fpath = finfo["filepath"]
                 ftype = finfo["file_type"]
                 cat = finfo["category"] or "Report"
-                
+
                 # Truncate long filenames
                 display_name = (fname[:22] + "...") if len(fname) > 25 else fname
-                
-                # Determine color/icon
+
+                # Determine icon
                 icon = "📄" if ftype == "PDF" else ("📝" if ftype == "Word" else "🌐")
-                color = "#10b981" if "General" in cat else "#6366f1"
-                
+
                 f_row = ctk.CTkFrame(self.recent_scroll, fg_color="#0f172a", height=32, corner_radius=4)
                 f_row.pack(fill="x", pady=1, padx=2)
-                
+
                 lbl = ctk.CTkLabel(f_row, text=f"{icon} {display_name}", font=ctk.CTkFont(size=10), text_color="#cbd5e1", anchor="w")
                 lbl.pack(side="left", padx=5, fill="x", expand=True)
-                
+
                 # Bind click to open
                 for w in (f_row, lbl):
                     w.bind("<Button-1>", lambda e, p=fpath: self._open_report_path(p))
-                    
+
         except Exception as e:
             print(f"  [UI] Error refreshing history: {e}")
 
@@ -859,7 +863,7 @@ class PoliceDesktopApp(ctk.CTk):
         self.api_status_box.delete("0.0", "end")
         self.api_status_box.insert("0.0", "🔄 Testing all keys...")
         self.api_status_box.configure(state="disabled")
-        
+
         threading.Thread(target=self._run_api_check, daemon=True).start()
 
     def _run_api_check(self):
@@ -867,22 +871,22 @@ class PoliceDesktopApp(ctk.CTk):
         from machine_translator import MachineTranslator
         try:
             health = MachineTranslator.get_api_health()
-            
+
             # Formulate display text
             lines = []
             lines.append("--- Gemini ---")
             for k, v in sorted(health["Gemini"].items()):
                 lines.append(f"{k}: {v}")
-            
+
             lines.append("\n--- GitHub ---")
             for k, v in sorted(health["GitHub"].items()):
                 lines.append(f"{k}: {v}")
-            
+
             display_text = "\n".join(lines)
-            
+
             # Update UI from thread
             self.after(0, lambda: self._update_api_ui(display_text))
-        except Exception as e:
+        except Exception:
             self.after(0, lambda: self._update_api_ui(f"❌ Check Failed: {str(e)[:50]}"))
 
     def _update_api_ui(self, text):
@@ -930,19 +934,19 @@ class PoliceDesktopApp(ctk.CTk):
     # =========================================================================
     def _build_analytics_tab(self):
         tab = self.tabs.tab("📈 Analytics")
-        
+
         # Main scrollable area
         self.analytics_scroll = ctk.CTkScrollableFrame(tab, fg_color="transparent")
         self.analytics_scroll.pack(fill="both", expand=True, padx=5, pady=5)
-        
+
         # Header / Stats Bar
         self.stats_bar = ctk.CTkFrame(self.analytics_scroll, fg_color="#1e293b", height=80, corner_radius=10)
         self.stats_bar.pack(fill="x", padx=10, pady=10)
-        
+
         self.stat_labels = {}
-        fields = [("total_reports", "Total Reports"), ("total_incidents", "Total Incidents"), 
+        fields = [("total_reports", "Total Reports"), ("total_incidents", "Total Incidents"),
                   ("security_incidents", "Security Cases"), ("general_incidents", "General Cases")]
-                  
+
         for i, (key, label) in enumerate(fields):
             f = ctk.CTkFrame(self.stats_bar, fg_color="transparent")
             f.pack(side="left", expand=True, fill="both", padx=5, pady=5)
@@ -953,7 +957,7 @@ class PoliceDesktopApp(ctk.CTk):
         # Charts Container
         self.charts_frame = ctk.CTkFrame(self.analytics_scroll, fg_color="transparent")
         self.charts_frame.pack(fill="both", expand=True)
-        
+
         # Refresh Button
         ctk.CTkButton(self.analytics_scroll, text="🔄 Refresh Analytics", command=self._refresh_analytics,
                       fg_color="#334155", hover_color="#1e293b").pack(pady=10)
@@ -968,11 +972,11 @@ class PoliceDesktopApp(ctk.CTk):
                 # 1. Update stats
                 stats = self.analytics_engine.get_summary_stats()
                 self.after(0, lambda s=stats: self._update_stat_labels(s))
-                
+
                 # 2. Generate and load charts
                 c1_path = self.analytics_engine.generate_crime_distribution_by_province()
                 c2_path = self.analytics_engine.generate_incident_trend()
-                
+
                 self.after(0, lambda p1=c1_path, p2=c2_path: self._display_charts(p1, p2))
             except Exception as e:
                 print(f"[Analytics UI] Error: {e}")
@@ -988,7 +992,7 @@ class PoliceDesktopApp(ctk.CTk):
         # Clear old charts if any
         for w in self.charts_frame.winfo_children():
             w.destroy()
-            
+
         # Display Province Chart
         if p1 and os.path.exists(p1):
             img1 = Image.open(p1)
@@ -996,17 +1000,17 @@ class PoliceDesktopApp(ctk.CTk):
             img1 = img1.resize((500, 300), Image.LANCZOS)
             photo1 = ImageTk.PhotoImage(img1)
             self.chart_refs['c1'] = photo1
-            
+
             c1_label = ctk.CTkLabel(self.charts_frame, image=photo1, text="")
             c1_label.grid(row=0, column=0, padx=10, pady=10)
-            
+
         # Display Trend Chart
         if p2 and os.path.exists(p2):
             img2 = Image.open(p2)
             img2 = img2.resize((500, 300), Image.LANCZOS)
             photo2 = ImageTk.PhotoImage(img2)
             self.chart_refs['c2'] = photo2
-            
+
             c2_label = ctk.CTkLabel(self.charts_frame, image=photo2, text="")
             c2_label.grid(row=0, column=1, padx=10, pady=10)
 

@@ -1,7 +1,6 @@
+
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional
-from datetime import datetime
-import re
+
 
 class IncidentRecord(BaseModel):
     """
@@ -16,18 +15,18 @@ class IncidentRecord(BaseModel):
     financial_loss: str = Field(default="Nil", description="Monetary value of loss/damage")
     status: str = Field(default="Confirmed", description="Investigation status (e.g., Confirmed, Ongoing, Arrested)")
     victim_suspect_names: str = Field(default="N/A", description="Names of involved parties")
-    
+
     # Optional metadata for routing
-    province: Optional[str] = "WESTERN PROVINCE"
-    category_num: Optional[str] = "00"
-    origin_block: Optional[str] = "General"
+    province: str | None = "WESTERN PROVINCE"
+    category_num: str | None = "00"
+    origin_block: str | None = "General"
 
     @field_validator("station")
     def clean_station(cls, v: str) -> str:
         return v.strip().upper()
 
     @field_validator("province")
-    def normalize_province(cls, v: Optional[str]) -> str:
+    def normalize_province(cls, v: str | None) -> str:
         if not v: return "WESTERN PROVINCE"
         return v.strip().upper()
 
@@ -45,9 +44,9 @@ class TranslationRefinement(BaseModel):
     AI output for the linguistic refinement stage.
     """
     refined_narrative: str
-    technical_terms_fixed: List[str]
-    detected_station: Optional[str] = None
-    detected_date: Optional[str] = None
+    technical_terms_fixed: list[str]
+    detected_station: str | None = None
+    detected_date: str | None = None
 
 class AnalyticsInsight(BaseModel):
     """
@@ -57,4 +56,4 @@ class AnalyticsInsight(BaseModel):
     total_count: int
     security_count: int
     general_count: int
-    top_categories: List[str]
+    top_categories: list[str]

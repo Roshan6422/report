@@ -1,30 +1,26 @@
-import warnings
 import os
+
 from dotenv import load_dotenv
+
 load_dotenv()
 import json
-import base64
-import calendar
-from io import BytesIO
+import logging
+import re
+import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+
+from ai_engine_manager import _split_large_text, get_engine
 from app import SinhalaPoliceReportExtractor
+from db_manager import log_generated_file, save_translated_incident
+from json_repair_tool import repair_json
 from machine_translator import (
-    translate_sinhala_to_english,
     extract_pdf_to_sinhala,
     sanitize_police_translation_output,
+    translate_sinhala_to_english,
 )
-from ai_engine_manager import get_engine, _split_large_text
-from local_ocr_tool import extract_text_tesseract
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
-import re
-import requests
-import subprocess
-import logging
-from general_report_prompts import GENERAL_REPORT_SYSTEM_PROMPT, GENERAL_REPORT_USER_PROMPT
 from sinhala_section_splitter import split_by_sections
-from db_manager import save_translated_incident, log_generated_file
-from json_repair_tool import repair_json
 from station_mapping import get_station_info
 from word_report_engine import WordReportEngine
 
@@ -756,7 +752,7 @@ def split_by_sections_go(raw_text):
         go_cmd = ["go", "run", "main.go", "-input", tmp_input, "-output", tmp_output]
         subprocess.run(go_cmd, check=True, capture_output=True, timeout=60)
 
-        with open(tmp_output, "r", encoding="utf-8") as f:
+        with open(tmp_output, encoding="utf-8") as f:
             go_data = json.load(f)
             return [(sec["title"], sec["content"]) for sec in go_data.get("sections", [])]
 
@@ -1575,10 +1571,12 @@ def process_pdf_hyper_hybrid(
 
 def generate_institutional_reports(category_summary, output_folder):
     """Enriched report mapping to fill both General and Security PDFs."""
+    from general_report_engine import generate_general_report
+    from general_report_engine import html_to_pdf as gen_to_pdf
     from police_incident_routing import apply_institutional_incident_routing
-    from general_report_engine import generate_general_report, html_to_pdf as gen_to_pdf
-    from web_report_engine_v2 import generate_security_report, html_to_pdf as sec_to_pdf
-    from police_patterns import GENERAL_SECTIONS, SECURITY_SECTIONS, PROVINCE_LIST
+    from police_patterns import GENERAL_SECTIONS, PROVINCE_LIST, SECURITY_SECTIONS
+    from web_report_engine_v2 import generate_security_report
+    from web_report_engine_v2 import html_to_pdf as sec_to_pdf
     from word_report_engine import WordReportEngine
 
     category_summary = apply_institutional_incident_routing(category_summary)

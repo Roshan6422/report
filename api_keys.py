@@ -1,11 +1,12 @@
-import os
 import json
+import os
+
 
 # Centralized API key loader for the project
 def load_env():
     env_path = os.path.join(os.path.dirname(__file__), ".env")
     if os.path.exists(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
+        with open(env_path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#") or "=" not in line:
@@ -28,7 +29,7 @@ def _load_json_keys(filename):
     try:
         path = os.path.join(os.path.dirname(__file__), filename)
         if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
     except Exception:
         pass
@@ -202,7 +203,7 @@ def _upsert_dotenv_var(name: str, value: str | None) -> None:
         return
     kept: list[str] = []
     if os.path.isfile(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
+        with open(env_path, encoding="utf-8") as f:
             for line in f:
                 s = line.strip()
                 if not s or s.startswith("#") or "=" not in s:

@@ -1,5 +1,5 @@
-import os
 import json
+import os
 import sys
 
 # Force utf-8 stdout to avoid cp1252 errors on Windows
@@ -14,17 +14,17 @@ def main():
         return
 
     try:
-        with open(dataset_path, 'r', encoding='utf-8') as f:
+        with open(dataset_path, encoding='utf-8') as f:
             lines = f.readlines()
             count = len(lines)
             last_line = lines[-1] if lines else None
-            
+
             print("="*60)
             print("🚀 LIVE DATASET STATUS (Snapshot)")
             print("="*60)
             print(f"📊 Total Training Samples: {count}")
             print("-" * 60)
-            
+
             if last_line:
                 data = json.loads(last_line)
                 messages = data.get("messages", [])

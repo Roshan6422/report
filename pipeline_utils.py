@@ -8,15 +8,15 @@ System Version: v2.0.0
 Prompt Version: stable_v3
 """
 
-import re
-import os
-import json
 import hashlib
+import json
+import os
+import re
 import time
-import sqlite3
-from datetime import datetime, timedelta
-import police_geo_utils
+from datetime import datetime
+
 import db_manager
+import police_geo_utils
 
 # =============================================================================
 # SYSTEM VERSIONING
@@ -53,48 +53,48 @@ def calculate_confidence(incident):
       - 5%  Money/value extraction presence
     """
     score = 0.0
-    
+
     # --- 1. Field Completeness (20%) ---
     field_score = 0.0
     station = incident.get("station", "").strip()
     body = incident.get("body", "").strip()
     hierarchy = incident.get("hierarchy", [])
-    
+
     if station and station.upper() not in ["UNKNOWN", "VARIOUS", "NARRATIVE"]:
         field_score += 0.5
     if body and len(body) > 20:
         field_score += 0.5
     score += field_score * 0.20
-    
+
     # --- 2. Body Quality (25%) ---
     body_score = 0.0
     if body:
         # Length score (up to 0.5 for 100+ words)
         word_count = len(body.split())
         body_score += min(word_count / 100, 0.5)
-        
+
         # Keyword score (up to 0.5)
         body_lower = body.lower()
         matches = sum(1 for kw in QUALITY_KEYWORDS if kw in body_lower)
         body_score += min(matches / 5, 0.5)
     score += body_score * 0.25
-    
+
     # --- 3. Reference Code (15%) ---
     ref_patterns = [r'\(CTM[\.\s]?\d+\)', r'\(OTM[\.\s]?\d+\)', r'\(IR[\.\s]?\d+\)']
     has_ref = any(re.search(p, body, re.IGNORECASE) for p in ref_patterns) if body else False
     score += (1.0 if has_ref else 0.0) * 0.15
-    
+
     # --- 4. Hierarchy Depth (15%) ---
     hierarchy_score = 0.0
     if hierarchy:
         non_empty = [h for h in hierarchy if h.strip()]
         hierarchy_score = min(len(non_empty) / 2, 1.0)
     score += hierarchy_score * 0.15
-    
+
     # --- 5. Date Presence (10%) ---
     date_found = bool(re.search(r'\d{4}[./-]\d{2}[./-]\d{2}|\d{1,2}(?:st|nd|rd|th)\s+\w+\s+\d{4}', body)) if body else False
     score += (1.0 if date_found else 0.0) * 0.10
-    
+
     # --- 6. Suspect/Victim Info (10%) ---
     if body:
         body_lower = body.lower()
@@ -104,11 +104,11 @@ def calculate_confidence(incident):
     else:
         person_score = 0.0
     score += person_score * 0.10
-    
+
     # --- 7. Money/Value Presence (5%) ---
     has_money = bool(re.search(r'Rs\.?\s*[\d,]+|valued|worth', body, re.IGNORECASE)) if body else False
     score += (1.0 if has_money else 0.0) * 0.05
-    
+
     return round(score, 3)
 
 
@@ -120,7 +120,7 @@ def calculate_section_confidence(section):
             sc = calculate_confidence(inc)
             inc["_confidence"] = sc
             all_scores.append(sc)
-    
+
     if all_scores:
         return round(sum(all_scores) / len(all_scores), 3)
     return 1.0  # Empty section = treated as perfect (Nil)
@@ -133,7 +133,7 @@ def calculate_report_confidence(data):
         sc = calculate_section_confidence(sec)
         sec["_confidence"] = sc
         section_scores.append(sc)
-    
+
     overall = round(sum(section_scores) / len(section_scores), 3) if section_scores else 0.0
     data["_confidence"] = overall
     return overall
@@ -147,7 +147,7 @@ def validate_date(date_str):
     """Check if a date string is in a valid format. Attempt auto-fix."""
     if not date_str or date_str.strip().lower() in ["unknown", "-", "nil"]:
         return date_str
-    
+
     # Standard formats to try
     formats = [
         "%Y-%m-%d", "%Y.%m.%d", "%d-%m-%Y", "%d.%m.%Y",
@@ -159,7 +159,7 @@ def validate_date(date_str):
             return dt.strftime("%Y-%m-%d")
         except ValueError:
             continue
-    
+
     # Try extracting from free text like "18th March 2026"
     match = re.search(r'(\d{1,2})(?:st|nd|rd|th)?\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s*(\d{4})', date_str, re.IGNORECASE)
     if match:
@@ -168,7 +168,7 @@ def validate_date(date_str):
             return dt.strftime("%Y-%m-%d")
         except Exception as e:
             print(f"  [Validation] Date parse error: {e}")
-    
+
     return date_str  # Return as-is if can't fix
 
 
@@ -176,7 +176,7 @@ def validate_money(money_str):
     """Check if money value is realistic for Sri Lanka police reports (Rs. 100 - Rs. 100,000,000)."""
     if not money_str:
         return money_str
-    
+
     # Extract numeric value
     nums = re.findall(r'[\d,]+', money_str)
     if nums:
@@ -203,34 +203,34 @@ def validate_incident(incident):
     issues = []
     body = incident.get("body", "")
     station = incident.get("station", "")
-    
+
     # 1. Empty body check
     if not body or len(body.strip()) < 10:
         issues.append("EMPTY_BODY: Incident body is empty or too short")
-    
+
     # 2. Empty station check
     if not station or station.upper() in ["UNKNOWN", ""]:
         issues.append("MISSING_STATION: No station name identified")
-    
+
     # 3. Date validation in body
     dates_in_body = re.findall(r'\d{4}[./-]\d{2}[./-]\d{2}', body)
     for d in dates_in_body:
         fixed = validate_date(d)
         if fixed != d:
             incident["body"] = body.replace(d, fixed)
-    
+
     # 4. Money validation in body
     money_matches = re.findall(r'Rs\.?\s*[\d,]+/?=?', body, re.IGNORECASE)
     for m in money_matches:
         fixed = validate_money(m)
         if fixed != m:
             incident["body"] = incident["body"].replace(m, fixed)
-    
+
     # 5. Check for suspect/victim info existence (warning only)
     body_lower = body.lower()
     if "suspect" not in body_lower and "arrested" not in body_lower:
         issues.append("NO_SUSPECT: Suspect information not found")
-    
+
     incident["_validation_issues"] = issues
     return issues
 
@@ -333,7 +333,7 @@ NORMALIZATION_MAP = {
     "thef": "Theft",
     "robery": "Robbery",
     "roberry": "Robbery",
-    "murdr": "Homicide", 
+    "murdr": "Homicide",
     "murder": "Homicide",
     "killing": "Homicide",
     "fatal assault": "Homicide",
@@ -372,23 +372,23 @@ def normalize_body_text(body):
     """Clean and normalize incident body text."""
     if not body:
         return ""
-    
+
     # Remove excessive whitespace
     body = re.sub(r'\s+', ' ', body).strip()
-    
+
     # Fix common OCR artifacts
     body = body.replace("  ", " ")
     body = body.replace(" .", ".")
     body = body.replace(" ,", ",")
-    
+
     # Ensure first letter is capitalized
     if body and body[0].islower():
         body = body[0].upper() + body[1:]
-    
+
     # Ensure ending with period
     if body and body[-1] not in ['.', ')', '!']:
         body += "."
-    
+
     return body
 
 
@@ -396,11 +396,11 @@ def normalize_incident(incident):
     """Apply all normalization rules to a single incident."""
     incident["station"] = normalize_station_name(incident.get("station", ""))
     incident["body"] = normalize_body_text(incident.get("body", ""))
-    
+
     # Normalize hierarchy entries
     hierarchy = incident.get("hierarchy", [])
     incident["hierarchy"] = [h.strip() for h in hierarchy if h.strip()]
-    
+
     return incident
 
 
@@ -441,29 +441,28 @@ def cache_get(text_hash):
         if not res:
             conn.close()
             return None
-            
+
         report_id = res[0]
         # Get all sections and incidents
         cursor.execute("SELECT title, content_sinhala FROM sections WHERE report_id = ?", (report_id,))
         sections = cursor.fetchall()
-        
+
         if not sections:
             conn.close()
             return None
-            
+
         # Reconstruct the standard JSON shape
-        data = {"sections": []}
         for title, content in sections:
-            # We don't reconstruct the full incident list from DB here 
+            # We don't reconstruct the full incident list from DB here
             # because the pipeline currently expects the section split
             pass
-            
+
         conn.close()
         print(f"  [DB Cache] HIT — Using SQLite record for hash {text_hash}")
-        # Return a dummy object for now that satisfies the pipeline 
+        # Return a dummy object for now that satisfies the pipeline
         # (The actual data is in the DB, but the generator expects a dict)
         # We will fully migrate the generator to SQLite query next.
-        return None 
+        return None
     except Exception as e:
         print(f"  [DB Cache] READ ERROR: {e}")
     return None
@@ -475,17 +474,17 @@ def cache_set(text_hash, data):
         # 1. Save Report Meta
         report_type = "General" # Fallback
         report_id = db_manager.save_report("cached_report.pdf", "2026-03-19", report_type, text_hash)
-        
+
         # 2. Save Sections and Incidents
         for sec in data.get("sections", []):
             sid = db_manager.save_section(report_id, sec["title"], "")
             for prov in sec.get("provinces", []):
                 for inc in prov.get("incidents", []):
                     db_manager.save_incident(
-                        sid, 
-                        inc.get("station", ""), 
-                        inc.get("province", ""), 
-                        inc.get("body", ""), 
+                        sid,
+                        inc.get("station", ""),
+                        inc.get("province", ""),
+                        inc.get("body", ""),
                         "", # Ref
                         inc.get("_confidence", 1.0),
                         inc.get("consensus_status", "OllamaOnly")
@@ -568,7 +567,7 @@ def get_recent_logs(count=10):
     logs = []
     for f in files:
         try:
-            with open(os.path.join(LOG_DIR, f), "r", encoding="utf-8") as fh:
+            with open(os.path.join(LOG_DIR, f), encoding="utf-8") as fh:
                 logs.append(json.load(fh))
         except (json.JSONDecodeError, OSError):
             pass
@@ -584,7 +583,7 @@ class ContextMemory:
     Tracks contextual info within a single report to fill gaps.
     Remembers last known location, date, suspect type, etc.
     """
-    
+
     def __init__(self):
         self.last_location = None
         self.last_date = None
@@ -593,22 +592,22 @@ class ContextMemory:
         self.last_div = None
         self.seen_stations = set()
         self.seen_suspects = []
-    
+
     def update_from_incident(self, incident):
         """Extract and store context from a processed incident."""
         station = incident.get("station", "").strip()
         body = incident.get("body", "")
         hierarchy = incident.get("hierarchy", [])
-        
+
         if station and station.upper() not in ["UNKNOWN", "VARIOUS"]:
             self.last_location = station
             self.seen_stations.add(station.upper())
-        
+
         # Extract date from body
         date_match = re.search(r'(\d{4}[./-]\d{2}[./-]\d{2})', body)
         if date_match:
             self.last_date = date_match.group(1)
-        
+
         # Store hierarchy context
         if hierarchy:
             for h in hierarchy:
@@ -617,18 +616,18 @@ class ContextMemory:
                     self.last_dig = h
                 elif "DIV" in h_upper:
                     self.last_div = h
-    
+
     def fill_gaps(self, incident):
         """Fill missing fields from context memory."""
         station = incident.get("station", "").strip()
         hierarchy = incident.get("hierarchy", [])
-        
+
         # Fill missing station from last known
         if not station or station.upper() in ["UNKNOWN", ""]:
             if self.last_location:
                 incident["station"] = self.last_location
                 incident["_filled_from_context"] = True
-        
+
         # Fill empty hierarchy
         if not hierarchy or all(not h.strip() for h in hierarchy):
             filled = []
@@ -639,9 +638,9 @@ class ContextMemory:
             if filled:
                 incident["hierarchy"] = filled
                 incident["_filled_from_context"] = True
-        
+
         return incident
-    
+
     def get_summary(self):
         """Return a summary of the current context state."""
         return {
@@ -688,7 +687,7 @@ def quality_gate_check(data):
     Returns (pass: bool, message: str, confidence: float)
     """
     overall_confidence = data.get("_confidence", 0.0)
-    
+
     if overall_confidence >= 0.7:
         return True, f"✅ Quality Gate PASSED (Confidence: {overall_confidence:.1%})", overall_confidence
     elif overall_confidence >= QUALITY_GATE_THRESHOLD:
@@ -704,26 +703,26 @@ def quality_gate_check(data):
 def handle_edge_cases(incident):
     """Handle common edge cases in incident data."""
     body = incident.get("body", "")
-    
+
     # Multiple suspects (split into list for display)
     suspects = re.findall(r'(?:suspect|සැකකරු)\s*(?:\d+)?[:\s]*([^,\n]{5,50})', body, re.IGNORECASE)
     if len(suspects) > 1:
         incident["_multiple_suspects"] = suspects
-    
+
     # No victim detection
     victim_found = bool(re.search(r'(?:victim|complainant|deceased|injured party)', body, re.IGNORECASE))
     if not victim_found:
         incident["_no_victim_info"] = True
-    
+
     # Past incidents (months/years ago)
     if re.search(r'(?:months?\s+ago|years?\s+ago|මාස|අවුරුද)', body, re.IGNORECASE):
         incident["_past_incident"] = True
-    
+
     # Multiple locations
     location_markers = re.findall(r'(?:at|in|near)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)', body)
     if len(location_markers) > 1:
         incident["_multiple_locations"] = location_markers
-    
+
     return incident
 
 
@@ -770,7 +769,7 @@ def classify_incident_hybrid(text, llm_classify_fn=None):
     for sinhala_kw, category in SINHALA_CLASSIFICATION.items():
         if sinhala_kw in text:
             return category, "rule_sinhala"
-    
+
     # Pass 2: English keyword match
     text_upper = text.upper()
     english_rules = {
@@ -788,11 +787,11 @@ def classify_incident_hybrid(text, llm_classify_fn=None):
         "ELEPHANT": "Wild Elephant Attack",
         "GRENADE": "Weapon Recovery", "PISTOL": "Weapon Recovery", "GUN": "Weapon Recovery",
     }
-    
+
     for kw, category in english_rules.items():
         if kw in text_upper:
             return category, "rule_english"
-    
+
     # Pass 3: LLM fallback
     if llm_classify_fn:
         try:
@@ -800,7 +799,7 @@ def classify_incident_hybrid(text, llm_classify_fn=None):
             return result, "llm"
         except Exception:
             pass
-    
+
     return "Other", "default"
 
 
@@ -819,10 +818,10 @@ def enhance_pipeline_output(data, input_text=""):
     """
     start = time.time()
     ctx = ContextMemory()
-    
+
     # 1. Normalize
     normalize_report(data)
-    
+
     for sec in data.get("sections", []):
         for prov in sec.get("provinces", []):
             for inc in prov.get("incidents", []):
@@ -833,20 +832,20 @@ def enhance_pipeline_output(data, input_text=""):
                     # Attempt to find Sinhala snippets in the full text if available
                     # (This is a fallback; better to do this in the main pipeline)
                     pass
-                
+
                 # Auto-assign Province if not set or "National"
                 if not inc.get("province") or inc.get("province").upper() == "NATIONAL PROVINCE":
                     geo = police_geo_utils.get_geo_info(inc.get("station", ""))
                     if geo["province"] != "NATIONAL PROVINCE":
                         inc["province"] = geo["province"]
-                
+
                 # Final check on hierarchy
                 if not inc.get("hierarchy"):
                     geo = police_geo_utils.get_geo_info(inc.get("station", ""))
                     inc["hierarchy"] = [f"S/DIG {geo['province'].replace(' PROVINCE', '')}", "", ""]
-                
+
                 ctx.update_from_incident(inc)
-    
+
     # 3. Edge case handling — only strip known AI filler phrases
     AI_FILLER_PHRASES = [
         "no incidents reported", "no records found", "data summary", "source material contained",
@@ -866,18 +865,18 @@ def enhance_pipeline_output(data, input_text=""):
         for prov in sec.get("provinces", []):
             for inc in prov.get("incidents", []):
                 handle_edge_cases(inc)
-    
+
     # 4. Validate
     total_issues = validate_report(data)
-    
+
     # 5. Score confidence
     overall_confidence = calculate_report_confidence(data)
-    
+
     # 6. Quality gate
     passed, message, score = quality_gate_check(data)
-    
+
     elapsed = round((time.time() - start) * 1000, 1)
-    
+
     data["_enhancement"] = {
         "system_version": SYSTEM_VERSION,
         "prompt_version": PROMPT_VERSION,
@@ -888,7 +887,7 @@ def enhance_pipeline_output(data, input_text=""):
         "context_summary": ctx.get_summary(),
         "processing_time_ms": elapsed
     }
-    
+
     return data
 
 
@@ -897,7 +896,7 @@ def enhance_pipeline_output(data, input_text=""):
 # =============================================================================
 if __name__ == "__main__":
     print(f"Pipeline Utils {SYSTEM_VERSION} — Self Test")
-    
+
     # Test confidence scoring
     test_inc = {
         "station": "GAMPAHA",
@@ -906,17 +905,17 @@ if __name__ == "__main__":
     }
     score = calculate_confidence(test_inc)
     print(f"  Confidence: {score:.1%}")
-    
+
     # Test pattern extraction
     test_text = "On 2026.03.18, a robbery occurred. Rs. 50,000 worth of gold was stolen. Vehicle WP CAB 1234."
     patterns = extract_all_patterns(test_text)
     print(f"  Dates: {len(patterns['dates'])}, Money: {len(patterns['money'])}, Vehicles: {len(patterns['vehicles'])}")
-    
+
     # Test classification
     cat, source = classify_incident_hybrid("සොරකම් වාර්තා විය")
     print(f"  Classification: {cat} (via {source})")
-    
+
     cat2, source2 = classify_incident_hybrid("A case of robbery at knifepoint was reported")
     print(f"  Classification: {cat2} (via {source2})")
-    
+
     print("\n✅ All self-tests passed!")

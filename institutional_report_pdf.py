@@ -3,10 +3,11 @@ institutional_report_pdf.py — Core Styling and Shared PDF Components
 ======================================================================
 """
 
-import pdfkit
 import os
 import re
 from datetime import datetime
+
+import pdfkit
 
 # 100% Pixel-Perfect Institutional CSS
 INSTITUTIONAL_REPORT_CSS = """
@@ -380,7 +381,7 @@ def html_to_pdf(html_path, pdf_path):
     # This requires wkhtmltopdf installed
     config = None
     wk_path = os.getenv("WKHTMLTOPDF_PATH")
-    
+
     if not wk_path:
         # Common Windows paths
         possible_paths = [
@@ -391,7 +392,7 @@ def html_to_pdf(html_path, pdf_path):
             if os.path.exists(p):
                 wk_path = p
                 break
-    
+
     if wk_path and os.path.exists(wk_path):
         config = pdfkit.configuration(wkhtmltopdf=wk_path)
 
@@ -413,7 +414,7 @@ def html_to_pdf(html_path, pdf_path):
         import subprocess
         try:
             print(f"  [PDF] pdfkit attempt failed ({e}). Trying browser-based PDF generation (MS Edge)...")
-            
+
             # Use absolute path for Edge if possible
             edge_cmd = os.getenv("EDGE_PATH", "msedge.exe")
             if edge_cmd == "msedge.exe":
@@ -425,14 +426,14 @@ def html_to_pdf(html_path, pdf_path):
                     if os.path.exists(p):
                         edge_cmd = p
                         break
-            
+
             # Note: msedge.exe --print-to-pdf is a reliable headless fallback on Windows
             subprocess.run([
-                edge_cmd, "--headless", "--disable-gpu", 
-                f"--print-to-pdf={os.path.abspath(pdf_path)}", 
+                edge_cmd, "--headless", "--disable-gpu",
+                f"--print-to-pdf={os.path.abspath(pdf_path)}",
                 f"file:///{os.path.abspath(html_path)}"
             ], check=True, capture_output=True)
-            
+
             if os.path.exists(pdf_path):
                  print(f"✅ PDF generated via Edge: {pdf_path}")
             else:
