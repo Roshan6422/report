@@ -134,7 +134,7 @@ hard-split long paragraphs."""
             buf.append(p)
             cur_len += added
         else:
-    flush_buf()
+            flush_buf()
             buf, cur_len = [p], plen
     flush_buf()
     return chunks
@@ -423,7 +423,7 @@ class AIEngineManager:
         if base_eng == "ollama" and self._ollama_consensus_enabled():
             res = self.call_ollama_consensus(prompt, system_prompt, timeout, fast_mode=True)
         else:
-    res = self._dispatch_engine(base_eng, prompt, system_prompt, timeout, target_override)
+            res = self._dispatch_engine(base_eng, prompt, system_prompt, timeout, target_override)
 
         if res and not str(res).startswith("❌") and _is_ai_refusal(res):
             print(f"  [AI] ⚠️ Refusal detected from {base_eng}. Triggering fallback.")
@@ -518,7 +518,7 @@ return the first successful response."""
             engines_to_try = [e for e in restricted_list
                               if e in ("ollama", "github", "openrouter", "gemini", "aimlapi", "groq")]
         else:
-    engines_to_try = []
+            engines_to_try = []
             if self.openrouter_key and "openrouter" not in self.offline_engines:
                 engines_to_try.append("openrouter")
             if self.github_keys and "github" not in self.offline_engines:
@@ -558,7 +558,7 @@ return the first successful response."""
                     print("  [AI] 🛡️ Ollama → 500 OVERLOAD. Marking OFFLINE until restart.")
                     self.offline_engines.add(base_eng)
                 else:
-    self.failure_counts[base_eng] = self.failure_counts.get(base_eng, 0) + 1
+                    self.failure_counts[base_eng] = self.failure_counts.get(base_eng, 0) + 1
                     if self.failure_counts[base_eng] >= 3:
                         print(f"  [AI] ⚠️ {base_eng} failing repeatedly. Marking OFFLINE.")
                         self.offline_engines.add(base_eng)
@@ -922,7 +922,7 @@ returns per-engine results dict."""
         for e in preferred:
             if e in available and e not in seen:
                 out.append(e)
-seen.add(e)
+                seen.add(e)
         for e in available:
             if e not in seen:
                 out.append(e)

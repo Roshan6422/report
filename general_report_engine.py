@@ -58,7 +58,7 @@ def render_markdown_tables(text):
                 html += f"<{row_tag}>{html_module.escape(cell)}</{row_tag}>"
             html += "</tr>"
         else:
-    if table_started:
+            if table_started:
                 html += "</table>"
                 table_started = False
             current_text_block.append(line)
@@ -85,7 +85,7 @@ def build_incident_html(inc):
     if isinstance(hierarchy, list):
         h_lines = [str(x).strip() for x in hierarchy if str(x).strip()]
     else:
-    hs = str(hierarchy or "").strip()
+        hs = str(hierarchy or "").strip()
         h_lines = [ln.strip() for ln in hs.split("\n") if ln.strip()] if "\n" in hs else []
 
     if h_lines:
@@ -93,7 +93,7 @@ def build_incident_html(inc):
             # Official sample shows these labels in bold
             dig_html += f'<div class="dig-district"><b>{html_module.escape(ln)}</b></div>'
     else:
-    dig_district, division = extract_hierarchy(hierarchy)
+        dig_district, division = extract_hierarchy(hierarchy)
         if dig_district:
             dig_html += f'<div class="dig-district"><b>{html_module.escape(dig_district)}</b></div>'
         if division:
@@ -195,12 +195,12 @@ def build_province_summary_table(data):
                     cat = _get_incident_category(inc)
                     counts[matched_prov][cat] += 1
 
-    html = '<div style="text-align:center
-font-weight:bold
-font-size:14pt
-margin-bottom:5mm
+    html = '<div style="text-align:center;\
+font-weight:bold;\
+font-size:14pt;\
+margin-bottom:5mm;\
 ">SUMMARY</div>'
-    html += '<table class="prov-summary-table"><tr><th style="width:30%
+    html += '<table class="prov-summary-table"><tr><th style="width:30%;\
 "></th>'
     header_cols = ["Theft", "HB & Theft", "Robberies<br>and Armed<br>Robberies", "Rape &<br>Sexual<br>Abuse", "Homicide", "Police<br>Accidents", "Fatal<br>Accidents", "Others"]
     for c in header_cols: html += f'<th class="header-rotated"><div>{c}</div></th>'

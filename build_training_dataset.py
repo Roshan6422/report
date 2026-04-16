@@ -187,7 +187,7 @@ def build_pairs() -> list:
         elif s:
             pairs.append({"date": date, "type": rtype, "sinhala": s[0], "english": None, "status": "MISSING_ENG"})
         else:
-    pairs.append({"date": date, "type": rtype, "sinhala": None, "english": e[0], "status": "MISSING_SIN"})
+            pairs.append({"date": date, "type": rtype, "sinhala": None, "english": e[0], "status": "MISSING_SIN"})
     return pairs
 
 def upsert_pair(conn: sqlite3.Connection, p: dict):
@@ -366,9 +366,9 @@ def main():
                     print(f"✅ Success! ({len(recovered_text)}c recovered)")
                     continue
                 else:
-    print("❌ No data found in DB.")
+                    print("❌ No data found in DB.")
             else:
-    print(f"  {tag}  ⚠️  {p['status']}")
+                print(f"  {tag}  ⚠️  {p['status']}")
 
             upsert_pair(conn, p)
             continue

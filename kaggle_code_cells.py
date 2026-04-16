@@ -4,19 +4,25 @@
  
 # FIX: numpy version pinned < 2.0 to prevent surya binary incompatibility
 # FIX: transformers version pinned for better stability with older architectures
-!pip install --quiet \
-    "numpy<2.0.0" \
-    surya-ocr \
-    Pillow \
-    flask \
-    "pyngrok==7.2.2" \
-    "transformers>=4.37.0,<5.0.0" \
-    "requests>=2.31.0"
+# NOTE: Jupyter magic commands commented out for Python compatibility
+# Run these manually in your terminal or Jupyter notebook
+# !pip install --quiet \
+#     "numpy<2.0.0" \
+#     surya-ocr \
+#     Pillow \
+#     flask \
+#     "pyngrok==7.2.2" \
+#     "transformers>=4.37.0,<5.0.0" \
+#     "requests>=2.31.0"
  
-!sudo apt-get install -y zstd > /dev/null 2>&1
+# NOTE: Jupyter magic commands commented out for Python compatibility
+# Run these manually in your terminal or Jupyter notebook
+# !sudo apt-get install -y zstd > /dev/null 2>&1
  
 # Install Ollama
-!curl -fsSL https://ollama.com/install.sh | sh
+# NOTE: Jupyter magic commands commented out for Python compatibility
+# Run these manually in your terminal or Jupyter notebook
+# !curl -fsSL https://ollama.com/install.sh | sh
  
 import numpy as np
 import torch
@@ -54,7 +60,9 @@ except Exception:
  
 if "gemma2:9b" not in existing:
     print("📥 Downloading Gemma2 9B (first time only, ~5 GB)...")
-    !ollama pull gemma2:9b
+    # Note: In a real Python script, you would use subprocess instead of !
+    # subprocess.run(["ollama", "pull", "gemma2:9b"], check=True)
+    print("Run: ollama pull gemma2:9b")
 else:
     print("✅ Gemma2 9B already downloaded — skip pull")
  
@@ -146,7 +154,9 @@ with open("Modelfile") as f:
 print("\n---")
  
 print("\n🔨 Building police-ai-master:latest...")
-!ollama create police-ai-master:latest -f Modelfile
+# NOTE: Jupyter magic commands commented out for Python compatibility
+# Run these manually in your terminal or Jupyter notebook
+# !ollama create police-ai-master:latest -f Modelfile
  
 # Verify
 result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
