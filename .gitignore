@@ -1,39 +1,22 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+```
+# Dependencies
+my_report_project/
 
-# Environments
+# Environment
 .env
-.venv
-env/
-venv/
-ENV/
+.env.local
+.env.*
 
-# Secrets
-*.json
-!demo_extracted_data.json
-!test_output.json
-!config.json
-
-# Outputs
-outputs/
-tmp/
-*.pdf
+# Logs and temp files
 *.log
-*.html
-!demo_report.pdf
-!Test_General_Report.pdf
-!Test_General_With_Nil.pdf
+*.tmp
+*.swp
 
-# OS
+# Editors
+.vscode/
+.idea/
+
+# OS generated files
 .DS_Store
 Thumbs.db
-
-# Models (Too large for GitHub)
-*.safetensors
-*.bin
-*.pth
-*.onnx
-model.safetensors
+```
