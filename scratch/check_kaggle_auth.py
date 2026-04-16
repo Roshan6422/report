@@ -1,9 +1,9 @@
 import os
-import kaggle
+
 try:
     from kaggle.api.kaggle_api_extended import KaggleApi
     api = KaggleApi()
-    print(f"Checking credentials...")
+    print("Checking credentials...")
     api.authenticate()
     print(f"Authenticated as: {api.config_values['username']}")
 except Exception as e:

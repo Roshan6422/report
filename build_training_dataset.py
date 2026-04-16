@@ -13,20 +13,18 @@ Usage:
     python build_training_dataset.py
 """
 
-import os
-import sys
-import re
 import json
-import time
-import sqlite3
 import logging
+import os
+import re
+import sqlite3
+import sys
 from datetime import datetime
-from pathlib import Path
 
 # --- Project Imports ---
 try:
-    from local_ocr_tool import extract_text_from_pdf
     from config_loader import get_config
+    from local_ocr_tool import extract_text_from_pdf
 except ImportError:
     # Fallback/Error if modules not found in path
     print("Error: Missing local project modules (local_ocr_tool, config_loader).")
@@ -60,7 +58,7 @@ log = logging.getLogger(__name__)
 # Reconfigure stdout for Unicode support on Windows
 if sys.stdout.encoding.lower() != 'utf-8':
     try: sys.stdout.reconfigure(encoding='utf-8')
-    except: pass
+    except Exception: pass
 
 MONTH_MAP = {
     "january": "01", "february": "02", "march": "03", "april": "04",
@@ -97,9 +95,8 @@ def _create_schema(conn: sqlite3.Connection):
             status          TEXT DEFAULT 'PAIRED',  -- PAIRED / MISSING_ENG / MISSING_SIN / SKIPPED
             added_at        TEXT DEFAULT (datetime('now')),
             UNIQUE(report_date, report_type)        -- Prevent duplicates
-        );
-
-        -- Formatted training examples
+        )
+-- Formatted training examples
         CREATE TABLE IF NOT EXISTS training_examples (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             pair_id         INTEGER REFERENCES pdf_pairs(id),
@@ -110,19 +107,17 @@ def _create_schema(conn: sqlite3.Connection):
             assistant_reply TEXT NOT NULL,
             exported        INTEGER DEFAULT 0,      -- 1 = already in JSONL
             created_at      TEXT DEFAULT (datetime('now'))
-        );
-
-        -- Export history log
+        )
+-- Export history log
         CREATE TABLE IF NOT EXISTS export_log (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             exported_at     TEXT DEFAULT (datetime('now')),
             example_count   INTEGER,
             output_path     TEXT
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_pairs_date ON pdf_pairs(report_date);
-        CREATE INDEX IF NOT EXISTS idx_examples_exported ON training_examples(exported);
-    """)
+        )
+CREATE INDEX IF NOT EXISTS idx_pairs_date ON pdf_pairs(report_date)
+CREATE INDEX IF NOT EXISTS idx_examples_exported ON training_examples(exported)
+""")
     conn.commit()
 
 # -----------------------------------------------------------------------------
@@ -249,7 +244,7 @@ def export_jsonl(conn: sqlite3.Connection, output_path: str) -> int:
         FROM training_examples 
         WHERE length(user_prompt) > 50 AND length(assistant_reply) > 50
     """).fetchall()
-    
+
     written = 0
     with open(output_path, "w", encoding="utf-8") as f:
         for row in rows:
@@ -262,7 +257,7 @@ def export_jsonl(conn: sqlite3.Connection, output_path: str) -> int:
             }
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
             written += 1
-    
+
     if written > 0:
         conn.execute("INSERT INTO export_log (example_count, output_path) VALUES (?,?)", (written, output_path))
         conn.commit()
@@ -275,34 +270,34 @@ def recover_from_main_db(date: str, rtype: str) -> str:
     """
     if not os.path.exists(MAIN_DB_PATH):
         return ""
-    
+
     table = "security_translations" if rtype == "Security" else "general_translations"
-    
+
     # Try different date formats (YYYY-MM-DD vs MM/DD or others)
     # Most likely in the DB it is stored as matched in the UI, often short formats.
     parts = date.split("-")
     if len(parts) < 3: return ""
     m, d = parts[1], parts[2]
     short_date = f"{int(m)}/{int(d)}" # e.g. 11/13
-    
+
     try:
         conn = sqlite3.connect(MAIN_DB_PATH)
         conn.row_factory = sqlite3.Row
-        
+
         # Querying by both exact and short date just in case
         rows = conn.execute(
             f"SELECT translation_english FROM {table} WHERE incident_date = ? OR incident_date = ?",
             (date, short_date)
         ).fetchall()
-        
+
         conn.close()
-        
+
         if rows:
             # Join all translations for that day
             return "\n\n".join(r["translation_english"] for r in rows if r["translation_english"])
     except Exception as e:
         log.warning(f"Main DB lookup failed: {e}")
-        
+
     return ""
 
 def write_report(conn: sqlite3.Connection):
@@ -338,21 +333,21 @@ Next Steps:
 
 def main():
     print(f"\n🚀 POLICE AI — TRAINING DATASET BUILDER (SQLite Edition)\n{'='*60}")
-    
+
     conn = get_db()
     log.info(f"Database: {DB_PATH}")
-    
+
     log.info("Scanning directories for PDF pairs...")
     pairs = build_pairs()
     log.info(f"Found {len(pairs)} records total.")
-    
+
     for i, p in enumerate(pairs, 1):
         tag = f"[{i:02d}/{len(pairs):02d}] {p['date']} ({p['type']})"
-        
+
         # Check if already processed and has text
-        existing = conn.execute("SELECT sinhala_text, english_text FROM pdf_pairs WHERE report_date=? AND report_type=?", 
+        existing = conn.execute("SELECT sinhala_text, english_text FROM pdf_pairs WHERE report_date=? AND report_type=?",
                                 (p['date'], p['type'])).fetchone()
-        
+
         if existing and existing['sinhala_text'] and existing['english_text']:
             print(f"  {tag}  ⏭️  Already in DB (Skipping OCR)")
             continue
@@ -374,7 +369,7 @@ def main():
                     print("❌ No data found in DB.")
             else:
                 print(f"  {tag}  ⚠️  {p['status']}")
-            
+
             upsert_pair(conn, p)
             continue
 
@@ -382,17 +377,17 @@ def main():
         try:
             p["sin_text"] = "\n".join(extract_text_from_pdf(p["sinhala"])).strip()
             p["eng_text"] = "\n".join(extract_text_from_pdf(p["english"])).strip()
-            
+
             if len(p["sin_text"]) < 50 or len(p["eng_text"]) < 50:
                 print("❌ Insufficient text extracted.")
                 p["status"] = "EMPTY_TEXT"
                 upsert_pair(conn, p)
                 continue
-                
+
             pair_id = upsert_pair(conn, p)
             upsert_example(conn, pair_id, p)
             print(f"✅ Saved! (SIN: {len(p['sin_text'])}c, ENG: {len(p['eng_text'])}c)")
-            
+
         except Exception as e:
             print(f"❌ Error: {e}")
             p["status"] = "OCR_ERROR"
@@ -401,7 +396,7 @@ def main():
     print(f"\n{'='*60}")
     written = export_jsonl(conn, JSONL_PATH)
     log.info(f"Exported {written} gold examples to {JSONL_PATH}")
-    
+
     write_report(conn)
     conn.close()
     print("Done.\n")

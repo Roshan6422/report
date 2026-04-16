@@ -7,20 +7,21 @@ os.environ["OCR_FAST"] = "1"
 
 if sys.stdout.encoding.lower() != 'utf-8':
     try: sys.stdout.reconfigure(encoding='utf-8')
-    except: pass
+    except Exception: pass
 
 from local_ocr_tool import extract_text_from_pdf
 
+
 def main():
     print("[Full Context] Extracting text for Master Knowledge Base...")
-    
+
     sin_pdf = r"D:\PROJECTS\ha\english\New folder\2026.03.21 දින සිදුවීම් වාර්තාව.pdf"
     gen_pdf = r"D:\PROJECTS\ha\english\New folder\New folder\21 March 2026 General Report.pdf"
     sec_pdf = r"D:\PROJECTS\ha\english\New folder\New folder\21 March  2026 Security Report.pdf"
-    
+
     out_file = r"d:\PROJECTS\pdf convert tool\dataset\master_knowledge.txt"
     os.makedirs(os.path.dirname(out_file), exist_ok=True)
-    
+
     print("1. Extracting Sinhala Original...")
     try:
         sin_text = "\n".join(extract_text_from_pdf(sin_pdf))
@@ -43,7 +44,7 @@ def main():
         return
 
     print("Saving to master_knowledge.txt...")
-    
+
     knowledge_blob = f"""This is the MASTER KNOWLEDGE BASE for Sri Lanka Police Incident Translations.
 
 INSTRUCTIONS FOR AI:
@@ -66,7 +67,7 @@ End of Knowledge Base.
 
     with open(out_file, "w", encoding="utf-8") as f:
         f.write(knowledge_blob)
-        
+
     print(f"[Done] Master Knowledge created successfully at: {out_file}")
 
 if __name__ == "__main__":

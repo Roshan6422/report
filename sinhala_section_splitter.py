@@ -1,11 +1,12 @@
 import re
 
+
 def normalize_sinhala(text):
     """
     Cleans PDF extraction artifacts specific to Sri Lanka Police reports.
     """
     if not text: return ""
-    
+
     repairs = {
         "වහ": "ස", "ෆී": "රු", "ළ": "ල", "඿": "ෂ", "඼": "ල", "තී": "ත්‍ර",
         "මිනීමෆ": "මිනීමැ", "වවො": "සො", "සලො": "සො", "සවො": "සො", "සරො": "කො",
@@ -61,7 +62,6 @@ def split_by_sections(raw_text, report_type="General"):
 
     lines = clean_text.split('\n')
     # More robust pattern: starts with number, then dot/space
-    header_num_pat = r"^\s*(?:[0-9]{1,2}|[IVX]{1,3})[\.\s\)\]\-\:]+"
 
     for line in lines:
         l_strip = line.strip()
@@ -75,11 +75,11 @@ def split_by_sections(raw_text, report_type="General"):
             # Match if line starts with ID or contains enough keywords (fingers)
             starts_with_id = re.match(r"^\s*" + cat["id"] + r"[\.\s]", l_strip)
             has_keywords = any(f in l_strip for f in cat["fingers"])
-            
+
             if (starts_with_id or has_keywords) and len(l_strip) < 180:
                 matched_title = f"{cat['id']}. {cat['name']}"
                 break
-        
+
         if matched_title:
             current_title = matched_title
             found_content[current_title].append(line)

@@ -1,39 +1,4 @@
-# Python
+```
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-
-# Secrets
-*.json
-!demo_extracted_data.json
-!test_output.json
-!config.json
-
-# Outputs
-outputs/
-tmp/
-*.pdf
-*.log
-*.html
-!demo_report.pdf
-!Test_General_Report.pdf
-!Test_General_With_Nil.pdf
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Models (Too large for GitHub)
-*.safetensors
-*.bin
-*.pth
-*.onnx
-model.safetensors
+*.pyc
+```

@@ -5,7 +5,6 @@ Automatically categorizes ALL security data into the 3 official sections.
 """
 
 import re
-from typing import List, Dict, Tuple
 
 # CATEGORY DEFINITIONS WITH KEYWORDS
 SECURITY_CATEGORIES = {
@@ -15,14 +14,14 @@ SECURITY_CATEGORIES = {
         ],
         "priority": 1
     },
-    
+
     "02. SUBVERSIVE ACTIVITIES": {
         "keywords": [
             "protest", "subversive", "demonstration", "anti-government", "unlawful assembly"
         ],
         "priority": 2
     },
-    
+
     "03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES": {
         "keywords": [
             "arms recovery", "firearm", "gun", "ammunition", "explosive", "detonator", "weapon recovery"
@@ -34,7 +33,7 @@ SECURITY_CATEGORIES = {
 
 class SecurityCategorizer:
     """Intelligent categorization of security incidents."""
-    
+
     def __init__(self):
         self.categories = SECURITY_CATEGORIES
         self.stats = {
@@ -44,8 +43,8 @@ class SecurityCategorizer:
             "category_3": 0,
             "uncategorized": 0
         }
-    
-    def categorize_incident(self, incident_text: str) -> Tuple[str, float]:
+
+    def categorize_incident(self, incident_text: str) -> tuple[str, float]:
         """
         Categorize a single incident into one of the 3 security categories.
         
@@ -57,38 +56,38 @@ class SecurityCategorizer:
         """
         incident_lower = incident_text.lower()
         scores = {}
-        
+
         # Score each category based on keyword matches
         for category, data in self.categories.items():
             score = 0
             matched_keywords = []
-            
+
             for keyword in data["keywords"]:
                 if keyword.lower() in incident_lower:
                     score += 1
                     matched_keywords.append(keyword)
-            
+
             # Boost score based on priority
             if score > 0:
                 score = score * (4 - data["priority"])  # Higher priority = higher boost
-            
+
             scores[category] = {
                 "score": score,
                 "keywords": matched_keywords
             }
-        
+
         # Find best match
         if not any(s["score"] > 0 for s in scores.values()):
             # Filter out non-important incidents
             return "UNCATEGORIZED", 0.0
-        
+
         best_category = max(scores.items(), key=lambda x: x[1]["score"])
         category_name = best_category[0]
         confidence = min(best_category[1]["score"] / 5.0, 1.0)  # Normalize to 0-1
-        
+
         return category_name, confidence
-    
-    def categorize_batch(self, incidents: List[Dict]) -> Dict[str, List[Dict]]:
+
+    def categorize_batch(self, incidents: list[dict]) -> dict[str, list[dict]]:
         """
         Categorize multiple incidents into the 3 security categories.
         
@@ -103,22 +102,22 @@ class SecurityCategorizer:
             "02. SUBVERSIVE ACTIVITIES": [],
             "03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES": []
         }
-        
+
         for incident in incidents:
             # Get incident text
             text = incident.get("body", incident.get("text", ""))
-            
+
             # Categorize
             category, confidence = self.categorize_incident(text)
-            
+
             # Add category info to incident
             incident["category"] = category
             incident["category_confidence"] = confidence
-            
+
             # Add to appropriate category
             if category in categorized:
                 categorized[category].append(incident)
-            
+
             # Update stats
             self.stats["total_incidents"] += 1
             if "01." in category:
@@ -129,10 +128,10 @@ class SecurityCategorizer:
                 self.stats["category_3"] += 1
             elif category == "UNCATEGORIZED":
                 self.stats["uncategorized"] += 1
-        
+
         return categorized
-    
-    def organize_by_province(self, categorized_incidents: Dict[str, List[Dict]]) -> Dict:
+
+    def organize_by_province(self, categorized_incidents: dict[str, list[dict]]) -> dict:
         """
         Organize categorized incidents by province for report generation.
         
@@ -143,34 +142,34 @@ class SecurityCategorizer:
             Report data structure ready for web_report_engine_v2
         """
         sections = []
-        
+
         for category_name, incidents in categorized_incidents.items():
             # Group incidents by province
             provinces = {}
-            
+
             for incident in incidents:
                 province = incident.get("province", "UNKNOWN PROVINCE")
                 if province not in provinces:
                     provinces[province] = []
                 provinces[province].append(incident)
-            
+
             # Build section structure
             section = {
                 "title": category_name + ":",
                 "provinces": []
             }
-            
+
             # Add provinces
             for province_name, province_incidents in provinces.items():
                 section["provinces"].append({
                     "name": province_name,
                     "incidents": province_incidents
                 })
-            
+
             sections.append(section)
-        
+
         return {"sections": sections}
-    
+
     def print_stats(self):
         """Print categorization statistics."""
         print("\n" + "="*60)
@@ -184,7 +183,7 @@ class SecurityCategorizer:
         print("="*60)
 
 
-def auto_categorize_security_data(raw_incidents: List[str]) -> Dict:
+def auto_categorize_security_data(raw_incidents: list[str]) -> dict:
     """
     Automatically categorize raw security incident data.
     
@@ -195,7 +194,7 @@ def auto_categorize_security_data(raw_incidents: List[str]) -> Dict:
         Structured data ready for report generation
     """
     categorizer = SecurityCategorizer()
-    
+
     # Convert raw texts to incident dictionaries
     incidents = []
     for text in raw_incidents:
@@ -204,16 +203,16 @@ def auto_categorize_security_data(raw_incidents: List[str]) -> Dict:
             "station": extract_station_name(text),
             "province": extract_province(text)
         })
-    
+
     # Categorize
     categorized = categorizer.categorize_batch(incidents)
-    
+
     # Organize by province
     report_data = categorizer.organize_by_province(categorized)
-    
+
     # Print stats
     categorizer.print_stats()
-    
+
     return report_data
 
 
@@ -232,12 +231,12 @@ def extract_province(text: str) -> str:
         "WESTERN", "CENTRAL", "SOUTHERN", "NORTHERN", "EASTERN",
         "NORTH WESTERN", "NORTH CENTRAL", "UVA", "SABARAGAMUWA"
     ]
-    
+
     text_upper = text.upper()
     for province in provinces:
         if province in text_upper:
             return province
-    
+
     return "UNKNOWN"
 
 
@@ -249,7 +248,7 @@ if __name__ == "__main__":
     print("█" + "  Automatic 3-Category Classification".center(58) + "█")
     print("█" + " "*58 + "█")
     print("█"*60 + "\n")
-    
+
     # Sample incidents
     sample_incidents = [
         """
@@ -278,10 +277,10 @@ if __name__ == "__main__":
         organization arrested. Propaganda materials confiscated. (CTM.456)
         """
     ]
-    
+
     # Categorize
     categorizer = SecurityCategorizer()
-    
+
     print("Categorizing incidents...\n")
     for i, incident in enumerate(sample_incidents, 1):
         category, confidence = categorizer.categorize_incident(incident)
@@ -289,17 +288,17 @@ if __name__ == "__main__":
         print(f"  Category: {category}")
         print(f"  Confidence: {confidence:.2f}")
         print()
-    
+
     # Batch categorization
-    incidents_dict = [{"body": text, "station": "TEST", "province": "WESTERN"} 
+    incidents_dict = [{"body": text, "station": "TEST", "province": "WESTERN"}
                       for text in sample_incidents]
-    
+
     categorized = categorizer.categorize_batch(incidents_dict)
-    
+
     print("\nCategorization Results:")
     print("-" * 60)
     for category, incidents in categorized.items():
         print(f"\n{category}")
         print(f"  Count: {len(incidents)}")
-    
+
     categorizer.print_stats()

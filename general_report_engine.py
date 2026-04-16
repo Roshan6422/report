@@ -17,7 +17,6 @@ from institutional_report_pdf import (
     sanitize_html_for_pdf,
     signature_report_date_string,
 )
-
 from web_report_engine_v2 import extract_hierarchy
 
 PAGE_TEMPLATE = """<div class="page">
@@ -31,13 +30,13 @@ def render_markdown_tables(text):
     """Simple regex-based markdown table to HTML converter."""
     if "|" not in text or "---" not in text:
         return html_module.escape(text).replace("\n", "<br>")
-        
+
     lines = text.strip().split("\n")
     html = ""
     table_started = False
-    
+
     current_text_block = []
-    
+
     for line in lines:
         if "|" in line:
             if not table_started:
@@ -47,12 +46,12 @@ def render_markdown_tables(text):
                     current_text_block = []
                 html += "<table>"
                 table_started = True
-            
+
             # Simple row parsing
             cells = [c.strip() for c in line.split("|") if c.strip() or line.strip().startswith("|")]
             if len(cells) == 0: continue
             if "---" in line: continue # Skip separator row
-            
+
             row_tag = "th" if html.endswith("<table>") else "td"
             html += "<tr>"
             for cell in cells:
@@ -63,12 +62,12 @@ def render_markdown_tables(text):
                 html += "</table>"
                 table_started = False
             current_text_block.append(line)
-            
+
     if table_started:
         html += "</table>"
     if current_text_block:
         html += html_module.escape("\n".join(current_text_block)).replace("\n", "<br>")
-        
+
     return html
 
 def build_incident_html(inc):
@@ -76,12 +75,12 @@ def build_incident_html(inc):
     station_raw = str(inc.get("station", "")).strip()
     station = re.sub(r'\s*(?:POLICE\s*)?STATION\s*$', '', station_raw, flags=re.IGNORECASE)
     station = station.strip().upper()
-    
+
     summary = str(inc.get("summary", "")).strip()
     body = str(inc.get("body", "")).strip()
     hierarchy = inc.get("hierarchy", "")
     ref = str(inc.get("ctm", inc.get("otm", inc.get("ir", "")))).strip()
-    
+
     dig_html = ""
     if isinstance(hierarchy, list):
         h_lines = [str(x).strip() for x in hierarchy if str(x).strip()]
@@ -99,27 +98,27 @@ def build_incident_html(inc):
             dig_html += f'<div class="dig-district"><b>{html_module.escape(dig_district)}</b></div>'
         if division:
             dig_html += f'<div class="dig-division"><b>{html_module.escape(division)}</b></div>'
-    
+
     # Body side: STATION: (BOLD) A case of CRIME (BOLD) ... (REF) (BOLD)
     body_html = f'<span class="station-name"><b>{html_module.escape(station)}:</b></span> '
-    
+
     # Narrative with bold crime type
     narrative = body.strip()
     crime_type = summary.strip()
-    
+
     formatted_body = render_markdown_tables(narrative)
-    
+
     # Simple bolding for the crime type tag if it's there
     if crime_type and crime_type.lower() in formatted_body.lower():
         # Match case-insensitive but preserve original case for replacement
         pattern = re.compile(re.escape(crime_type), re.IGNORECASE)
         formatted_body = pattern.sub(f"<b>{crime_type}</b>", formatted_body, count=1)
-    
+
     body_html += formatted_body
-    
+
     if ref and ref not in formatted_body:
         body_html += f' <b>({html_module.escape(ref)})</b>'
-    
+
     return (
         f'<div class="incident-block">'
         f'  <div class="dig-side">{dig_html}</div>'
@@ -132,24 +131,24 @@ def build_section_html(sec):
     """Build section HTML."""
     title = str(sec.get("title", ""))
     provinces = sec.get("provinces", [])
-    
+
     has_any_incidents = any(p.get("incidents") for p in provinces)
     if not has_any_incidents:
         return f'<div class="section-header">{title} Nil</div>'
-    
+
     html = f'<div class="section-header">{title}</div>'
     for p in provinces:
         incs = p.get("incidents", [])
         if not incs: continue
-        
+
         province_name = p["name"].upper()
         if "PROVINCE" not in province_name:
             province_name += " PROVINCE"
-            
+
         html += f'<div class="province-heading">S/DIG  {province_name}</div>'
         for i in incs:
             html += build_incident_html(i)
-    
+
     return html
 
 def _get_incident_category(inc):
@@ -183,8 +182,8 @@ def _get_incident_category(inc):
 def build_province_summary_table(data):
     provinces = ["Western", "Sabaragamuwa", "Southern", "Uva", "Central", "North Western", "North Central", "Eastern", "Northern"]
     columns = ["Theft", "HB & Theft", "Robberies and Armed Robberies", "Rape & Sexual Abuse", "Homicide", "Police Accidents", "Fatal Accidents", "Others"]
-    
-    counts = {p: {c: 0 for c in columns} for p in provinces}
+
+    counts = {p: dict.fromkeys(columns, 0) for p in provinces}
     for sec in data.get("sections", []):
         for prov_data in sec.get("provinces", []):
             prov_name = str(prov_data.get("name", "")).title().replace(" Province", "")
@@ -195,14 +194,19 @@ def build_province_summary_table(data):
                         inc = {"summary": str(inc), "body": str(inc)}
                     cat = _get_incident_category(inc)
                     counts[matched_prov][cat] += 1
-                
-    html = '<div style="text-align:center; font-weight:bold; font-size:14pt; margin-bottom:5mm;">SUMMARY</div>'
-    html += '<table class="prov-summary-table"><tr><th style="width:30%;"></th>'
+
+    html = '<div style="text-align:center;\
+font-weight:bold;\
+font-size:14pt;\
+margin-bottom:5mm;\
+">SUMMARY</div>'
+    html += '<table class="prov-summary-table"><tr><th style="width:30%;\
+"></th>'
     header_cols = ["Theft", "HB & Theft", "Robberies<br>and Armed<br>Robberies", "Rape &<br>Sexual<br>Abuse", "Homicide", "Police<br>Accidents", "Fatal<br>Accidents", "Others"]
     for c in header_cols: html += f'<th class="header-rotated"><div>{c}</div></th>'
     html += '<th class="header-rotated"><div>Grand<br>total</div></th></tr>'
-    
-    col_totals = {c: 0 for c in columns}
+
+    col_totals = dict.fromkeys(columns, 0)
     grand_total = 0
     for p in provinces:
         html += f'<tr><td class="left-align">{p} Province</td>'
@@ -214,7 +218,7 @@ def build_province_summary_table(data):
             html += f'<td>{f"{val:02d}" if val > 0 else "-"}</td>'
         grand_total += row_total
         html += f'<td>{f"<b>{row_total:02d}</b>" if row_total > 0 else "-"}</td></tr>'
-        
+
     html += '<tr><td class="left-align">Total</td>'
     for c in columns:
         val = col_totals[c]
@@ -223,7 +227,8 @@ def build_province_summary_table(data):
     return html
 
 def _normalize_case_count_row(val):
-    """table_counts from routing may be plain ints per category; case table expects dict rows."""
+    """table_counts from routing may be plain ints per category
+case table expects dict rows."""
     if val is None:
         return {"reported": 0, "solved": 0, "unsolved": 0}
     if isinstance(val, dict):
@@ -255,15 +260,15 @@ def build_case_table(counts=None):
 def generate_general_report(data, output_path):
     logo_filename = "police_logo.png" if os.path.exists("police_logo.png") else "police_logo.jpg"
     logo_path = "file:///" + os.path.abspath(logo_filename).replace("\\", "/")
-    
+
     content_html = "".join(build_section_html(sec) for sec in data.get("sections", []))
     matrix_html = build_province_summary_table(data)
-    
+
     date_range = format_date_range_for_header(data.get("date_range", ""))
     report_date = signature_report_date_string()
     pages = []
     header_html = build_report_header(logo_path, date_range, "General Situation Report")
-    
+
     # Page 1
     page1 = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "1").replace("{{ CONTENT }}", header_html + content_html)
     pages.append(page1)
@@ -273,7 +278,7 @@ def generate_general_report(data, output_path):
     case_t = build_case_table(data.get("table_counts"))
     pages.append(PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "17").replace("{{ CONTENT }}", case_t + sig_s))
     pages.append(PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "18").replace("{{ CONTENT }}", dist_s))
-    
+
     all_p = "".join(pages)
     full_h = sanitize_html_for_pdf(build_institutional_html_document("General Situation Report", all_p))
     with open(output_path, "w", encoding="utf-8") as f: f.write(full_h)

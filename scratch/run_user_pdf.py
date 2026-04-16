@@ -1,22 +1,23 @@
+import json
 import os
 import sys
-import json
-import traceback
 import time
+import traceback
 
 # Add project root to path
 sys.path.append(os.getcwd())
 
 from desktop_pipeline import process_pdf_hyper_hybrid
 
+
 def run_sample_process():
     # Use the renamed ASCII path
     pdf_path = "d:\\PROJECTS\\report_2026_03_14.pdf"
     output_dir = r"d:\PROJECTS\pdf convert tool\outputs"
-    
+
     # Use a unique log for this run
     log_file = f"scratch/run_log_{int(time.time())}.txt"
-    
+
     with open(log_file, "w", encoding="utf-8") as L:
         def log_msg(msg):
             L.write(msg + "\n")
@@ -24,7 +25,7 @@ def run_sample_process():
             print(msg, flush=True)
 
         log_msg(f"Starting background processing for: {pdf_path}")
-        
+
         def progress_cb(cat, data):
             if cat == "OCR_UPDATE":
                 msg = data.get('msg', '')
@@ -35,12 +36,12 @@ def run_sample_process():
         try:
             # Use our updated hybrid pipeline which now uses page-by-page translation
             results = process_pdf_hyper_hybrid(
-                pdf_path, 
+                pdf_path,
                 progress_callback=progress_cb,
                 output_folder=output_dir,
                 fast_complete=False # Use the high-fidelity page-by-page path
             )
-            
+
             if results.get("success"):
                 log_msg("Processing Complete!")
                 summary = {

@@ -1,10 +1,13 @@
-import os
-import time
-import shutil
 import json
+import os
 import re
+import time
+
 from quota_manager import get_quota_mgr
-from station_mapping import SINHALA_TO_ENGLISH, get_institutional_prompt_snippet, enforce_terminology
+from station_mapping import (
+    enforce_terminology,
+    get_institutional_prompt_snippet,
+)
 
 # Prefer Gemini 3 preview per https://ai.google.dev/gemini-api/docs; fall back to 2.0 if unavailable.
 _DEFAULT_GEMINI_MODELS = [
@@ -73,9 +76,7 @@ def _is_gemini_quota_or_rate_limit(msg) -> bool:
         return True
     if "quota" in s and any(x in s for x in ("exceed", "limit", "exhausted", "free_tier")):
         return True
-    if "rate" in s and "limit" in s:
-        return True
-    return False
+    return bool("rate" in s and "limit" in s)
 
 
 def _mt_skip_local_ocr_fallback(last_error=None) -> bool:
@@ -342,7 +343,7 @@ def _load_gemini_key():
     try:
         keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
         if os.path.exists(keys_path):
-            with open(keys_path, "r") as f:
+            with open(keys_path) as f:
                 keys = json.load(f)
             for k, v in keys.items():
                 if k.startswith("Gemini") and v.strip():
@@ -356,7 +357,7 @@ def _load_openai_keys():
     """Load all available OpenAI API keys from gemini_keys.json."""
     try:
         keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
-        with open(keys_path, "r") as f:
+        with open(keys_path) as f:
             keys = json.load(f)
         found = [v.strip() for k, v in keys.items() if k.startswith("OpenAI") and v.strip()]
         if found:
@@ -386,27 +387,28 @@ class MachineTranslator:
         Returns a dict: { 'Gemini': { 'Key1': '✅ Active', ... }, 'GitHub': { ... } }
         """
         import concurrent.futures
-        from google import genai
+
         import requests
-        
+        from google import genai
+
         results = {"Gemini": {}, "GitHub": {}}
-        
+
         # 1. Load keys
         gemini_keys = {}
         github_keys = {}
         keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
         github_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "github_keys.json")
-        
+
         try:
-            with open(keys_path, "r") as f:
+            with open(keys_path) as f:
                 gk = json.load(f)
                 gemini_keys = {k: v for k, v in gk.items() if k.startswith("Gemini") and v.strip()}
-        except: pass
-        
+        except Exception: pass
+
         try:
-            with open(github_path, "r") as f:
+            with open(github_path) as f:
                 github_keys = json.load(f)
-        except: pass
+        except Exception: pass
 
         def _test_gemini(name, key):
             try:
@@ -426,35 +428,36 @@ class MachineTranslator:
                 headers = {"Authorization": f"Bearer {key}"}
                 payload = {"messages": [{"role": "user", "content": "hi"}], "model": "gpt-4o-mini", "max_tokens": 5}
                 r = requests.post(url, headers=headers, json=payload, timeout=5)
-                
+
                 rem = r.headers.get("x-ratelimit-remaining-requests")
                 if rem:
                     try: get_quota_mgr().update_from_headers(name, int(rem))
-                    except: pass
-                
+                    except Exception: pass
+
                 if r.status_code == 200: return name, "✅ Active"
                 if r.status_code == 429: return name, "🔴 Rate Limited"
                 return name, f"❌ Failed ({r.status_code})"
-            except: return name, "⚠️ Error"
+            except Exception: return name, "⚠️ Error"
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             g_futs = [executor.submit(_test_gemini, k, v) for k, v in gemini_keys.items()]
             gh_futs = [executor.submit(_test_github, k, v) for k, v in github_keys.items()]
             for f in concurrent.futures.as_completed(g_futs + gh_futs):
                 name, status = f.result()
-                if name.startswith("Gemini"): 
+                if name.startswith("Gemini"):
                     usage = get_quota_mgr().get_status(name, "Gemini")
                     results["Gemini"][name] = f"{status} ({usage})"
-                else: 
+                else:
                     usage = get_quota_mgr().get_status(name, "GitHub")
                     results["GitHub"][name] = f"{status} ({usage})"
-        
+
         return results
 
     def _extract_pdf_to_json_turbo_text_ai(self, pdf_path: str, engine: str) -> dict:
         """Turbo JSON via PyPDF2/Tesseract text + Groq/OpenRouter/GitHub/AIML (no Gemini PDF upload)."""
         import time as _time
-        from ai_engine_manager import get_engine, _split_large_text
+
+        from ai_engine_manager import _split_large_text, get_engine
 
         print(f"    [TURBO/{engine}] PDF → local text → {engine} JSON (set PDF_EXTRACT_AI_ENGINE)…")
         ocr_text = _pdf_raw_text_for_ai_pipeline(pdf_path)
@@ -527,7 +530,7 @@ class MachineTranslator:
 
     def _extract_sinhala_text_via_ai(self, pdf_path: str, engine: str) -> str:
         """Raw Sinhala line via local text + chosen API (no Gemini upload)."""
-        from ai_engine_manager import get_engine, _split_large_text
+        from ai_engine_manager import _split_large_text, get_engine
 
         print(f"    [OCR/{engine}] PDF → local text → {engine} (Sinhala cleanup, PDF_EXTRACT_AI_ENGINE)…")
         raw = _pdf_raw_text_for_ai_pipeline(pdf_path)
@@ -557,7 +560,7 @@ class MachineTranslator:
 
     def _translate_pdf_via_text_ai(self, pdf_path: str, engine: str) -> str:
         """Full-document English translation via local text + chosen API."""
-        from ai_engine_manager import get_engine, _split_large_text
+        from ai_engine_manager import _split_large_text, get_engine
 
         print(f"    [MT/{engine}] PDF → local text → {engine} English translation (PDF_EXTRACT_AI_ENGINE)…")
         raw = _pdf_raw_text_for_ai_pipeline(pdf_path)
@@ -613,12 +616,11 @@ class MachineTranslator:
             return self._extract_pdf_to_json_turbo_text_ai(pdf_path, alt)
 
         import time as _time
-        from datetime import datetime
 
         gemini_keys = _load_openai_keys.__doc__ and []  # just init
         try:
             keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
-            with open(keys_path, "r") as f:
+            with open(keys_path) as f:
                 keys_dict = json.load(f)
             gemini_keys = [(k, v.strip()) for k, v in keys_dict.items() if k.startswith("Gemini") and v.strip()]
         except Exception:
@@ -640,7 +642,7 @@ class MachineTranslator:
             try:
                 # Record usage immediately when attempting
                 get_quota_mgr().record_usage(key_id, "Gemini")
-                
+
                 from google import genai
                 client = genai.Client(api_key=api_key)
 
@@ -688,18 +690,17 @@ class MachineTranslator:
                         "7. Respond ONLY with valid JSON — no markdown."
                     )
 
-                    t1 = _time.time()
                     response = client.models.generate_content(
                         model=model_id,
                         contents=[pdf_file, prompt],
                         config=_gemini_output_config(response_mime_type="application/json"),
                     )
-                    
+
                     try:
                         client.files.delete(name=pdf_file.name)
                     except Exception:
                         pass
-                    
+
                     import json
                     return json.loads(response.text)
 
@@ -766,8 +767,8 @@ class MachineTranslator:
                 f"Turbo: Gemini failed and local OCR fallback disabled. Last Gemini error: {last_error}"
             )
         try:
+            from ai_engine_manager import _split_large_text, get_engine
             from local_ocr_tool import extract_text_from_pdf
-            from ai_engine_manager import get_engine, _split_large_text
 
             ocr_res = extract_text_from_pdf(pdf_path)
             ocr_text = _ocr_pages_to_text(ocr_res)
@@ -983,7 +984,7 @@ class MachineTranslator:
         gemini_keys = []
         try:
             keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
-            with open(keys_path, "r") as f:
+            with open(keys_path) as f:
                 keys_dict = json.load(f)
             gemini_keys = [(k, v.strip()) for k, v in keys_dict.items() if k.startswith("Gemini") and v.strip()]
         except Exception:
@@ -1053,7 +1054,7 @@ class MachineTranslator:
 
             if ocr_text and len(ocr_text.strip()) > 50:
                 print(f"    [MT/Fallback] Local OCR extracted {len(ocr_text)} chars. Chunking and translating...")
-                from ai_engine_manager import get_engine, _split_large_text
+                from ai_engine_manager import _split_large_text, get_engine
                 mgr = get_engine()
                 mt_sys = (
                     "Expert Institutional Translator. Clinical and neutral tone. "
@@ -1065,7 +1066,7 @@ class MachineTranslator:
                 def _process_and_verify_chunk(idx: int, chunk: str) -> tuple:
                     """Worker function: Translates a chunk, then feeds it to a Checker AI for verification."""
                     print(f"    [MT/Worker-{idx}] Starting translation (~{len(chunk)} chars)...")
-                    
+
                     # --- STEP 1: Preliminary Translation ---
                     # Only request the summary table if it's the LAST chunk, since the table is at the end of the PDF!
                     table_instruction = (
@@ -1088,7 +1089,7 @@ class MachineTranslator:
                         f"\n\nSINHALA / OCR SOURCE:\n"
                         f"{chunk}"
                     )
-                    
+
                     # We try Github first for the rough translation
                     translated_text = mgr._call_github(github_prompt, mt_sys, 180)
                     if not translated_text or translated_text.startswith("❌"):
@@ -1116,12 +1117,12 @@ class MachineTranslator:
                         f"CORRECTED ENGLISH OUTPUT ONLY:"
                     )
                     checker_sys = "You are an automated code validation agent. Output exactly the requested text. No markdown formatting."
-                    
+
                     # User requested: No Github for the Checker AI. Use Ollama/Groq.
                     verified_text = mgr.translation_fallback_after_gemini_exhausted(
                         checker_prompt, checker_sys, timeout=300, skip_github=True
                     )
-                    
+
                     if verified_text and not verified_text.startswith("❌"):
                         print(f"    [MT/Worker-{idx}] ✅ Verification complete.")
                         return (idx, verified_text)
@@ -1148,7 +1149,7 @@ class MachineTranslator:
 
                 # Reassemble correctly based on original chunk index order
                 eng_parts = [eng_parts_dict[i] for i in range(len(chunks)) if i in eng_parts_dict]
-                
+
                 print("    [MT/Fallback] ✅ All chunks concurrently translated & verified.")
                 return sanitize_police_translation_output("\n\n".join(eng_parts))
             else:
@@ -1260,7 +1261,7 @@ class MachineTranslator:
         gemini_keys = []
         try:
             keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
-            with open(keys_path, "r") as f:
+            with open(keys_path) as f:
                 keys_dict = json.load(f)
             gemini_keys = [(k, v.strip()) for k, v in keys_dict.items() if k.startswith("Gemini") and v.strip()]
         except Exception:
@@ -1344,13 +1345,13 @@ class MachineTranslator:
         Rotation: ONE attempt per Gemini model (key rotates per model).
         Fallback: GitHub models (gpt-4o-mini → llama → phi) via ai_engine_manager.
         """
+
         from google import genai
-        import time as _time
 
         gemini_keys = []
         try:
             keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
-            with open(keys_path, "r") as f:
+            with open(keys_path) as f:
                 keys_dict = json.load(f)
             gemini_keys = [(k, v.strip()) for k, v in keys_dict.items() if k.startswith("Gemini") and v.strip()]
         except Exception:
@@ -1375,7 +1376,7 @@ class MachineTranslator:
         # --- GEMINI: PARALLEL RACE ACROSS ALL MODELS ---
         if gemini_keys:
             import concurrent.futures
-            
+
             def _run_text_model(model_id, api_key, key_id):
                 try:
                     get_quota_mgr().record_usage(key_id, "Gemini")
@@ -1389,7 +1390,7 @@ class MachineTranslator:
                 except Exception as e:
                     print(f"    [MT/Gemini] {model_id} failed: {e}")
                     raise e
-            
+
             print(f"    [MT/Gemini] 🚀 Launching {len(gemini_keys)} keys (Batches of 5) for text in PARALLEL...")
             batch_size = 5
             for batch_start in range(0, len(gemini_keys), batch_size):
@@ -1400,7 +1401,7 @@ class MachineTranslator:
                         assigned_model = gemini_models[(batch_start + i) % len(gemini_models)]
                         display_name = f"{assigned_model} ({key_id})"
                         future_to_model[executor.submit(_run_text_model, assigned_model, key_val, key_id)] = display_name
-                    
+
                     for future in concurrent.futures.as_completed(future_to_model):
                         model_id = future_to_model[future]
                         try:
@@ -1480,7 +1481,7 @@ class MachineTranslator:
         gemini_keys = []
         try:
             keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gemini_keys.json")
-            with open(keys_path, "r") as f:
+            with open(keys_path) as f:
                 keys_dict = json.load(f)
             gemini_keys = [(k, v.strip()) for k, v in keys_dict.items() if k.startswith("Gemini") and v.strip()]
         except Exception:
@@ -1616,9 +1617,9 @@ class MachineTranslator:
         # Force 1-page splits for OCR
         os.environ["GEMINI_OCR_PAGES_PER_PART"] = "1"
         os.environ["GEMINI_OCR_SPLIT_MIN_PAGES"] = "1"
-        
+
         chunks = self.extract_pdf_sinhala_with_gemini(pdf_path, return_chunks=True, progress_callback=progress_callback)
-        
+
         if isinstance(chunks, str):
             chunks = [chunks]
 
@@ -1640,7 +1641,7 @@ class MachineTranslator:
                 progress_callback("OCR_UPDATE", {"msg": f"Translating Page {pnum}/{len(chunks)}..."})
             trans = self.translate_sinhala_document_to_english(seg, pnum, len(chunks))
             eng_parts.append(f"{marker}\n\n{trans}")
-        
+
         english = "\n\n".join(eng_parts)
 
         if output_txt:
@@ -1665,7 +1666,7 @@ class MachineTranslator:
         try:
             import openai
         except ImportError:
-            raise RuntimeError("openai package not installed. Run: pip install openai")
+            raise RuntimeError("openai package not installed. Run: pip install openai") from None
 
         openai_keys = _load_openai_keys()
         if not openai_keys:
@@ -1696,7 +1697,7 @@ class MachineTranslator:
                     max_tokens=4096
                 )
                 result = response.choices[0].message.content.strip()
-                print(f"    [MT/OpenAI] ✅ GPT-4o-mini translation success!")
+                print("    [MT/OpenAI] ✅ GPT-4o-mini translation success!")
                 if isinstance(text, list):
                     lines = result.split("\n")
                     while len(lines) < len(texts):

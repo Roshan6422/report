@@ -1,8 +1,7 @@
-import requests
-import json
 import os
 import time
-from typing import Optional
+
+import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -23,7 +22,7 @@ _ai_session.mount("http://",  _ai_adapter)
 
 class BaseProvider:
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: Optional[str] = None) -> str:
+             model_override: str | None = None) -> str:
         raise NotImplementedError
 
 
@@ -38,7 +37,7 @@ class GitHubProvider(BaseProvider):
         self.api_keys   = api_keys   # list of (name, key) tuples
         self.key_index  = 0
 
-    def get_next_key(self) -> Optional[str]:
+    def get_next_key(self) -> str | None:
         if not self.api_keys:
             return None
         item = self.api_keys[self.key_index % len(self.api_keys)]
@@ -47,7 +46,7 @@ class GitHubProvider(BaseProvider):
         return item[1] if isinstance(item, (list, tuple)) else item
 
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: Optional[str] = None) -> str:
+             model_override: str | None = None) -> str:
         key = self.get_next_key()
         if not key:
             return "❌ GitHub Error: No API Key configured."
@@ -78,7 +77,7 @@ class GitHubProvider(BaseProvider):
             )
             if res.status_code == 200:
                 data = res.json()
-                if "choices" in data and data["choices"]:
+                if data.get("choices"):
                     ch = data["choices"][0]
                     if ch.get("finish_reason") == "length":
                         print(f"  [GitHub] ⚠️ Output truncated for {model}. Raise GITHUB_MAX_OUTPUT_TOKENS.")
@@ -112,7 +111,7 @@ class GeminiProvider(BaseProvider):
         self.api_keys  = api_keys
         self.key_index = 0
 
-    def _get_next_key(self) -> Optional[str]:
+    def _get_next_key(self) -> str | None:
         if not self.api_keys:
             return None
         key = self.api_keys[self.key_index % len(self.api_keys)]
@@ -120,7 +119,7 @@ class GeminiProvider(BaseProvider):
         return key
 
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: Optional[str] = None) -> str:
+             model_override: str | None = None) -> str:
         if not self.api_keys:
             return "❌ Gemini Error: No API key configured."
 
@@ -188,7 +187,7 @@ class OllamaProvider(BaseProvider):
         return "ngrok" in self.base_url or "kaggle" in self.base_url
 
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: Optional[str] = None) -> str:
+             model_override: str | None = None) -> str:
         model            = model_override or self.model_name
         effective_timeout = max(timeout, 300) if self._is_cloud else timeout
         max_attempts      = 2 if self._is_cloud else 1

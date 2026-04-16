@@ -1,9 +1,8 @@
-import os
 import json
-import time
+import os
 import re
+
 from ai_engine_manager import get_engine
-from machine_translator import MachineTranslator
 
 # Configuration
 SAMPLE_DIR = "sample"
@@ -13,7 +12,7 @@ TEACHERS = ["gemini", "openrouter", "github"]
 def knowledge_factory():
     print("🚀 [Knowledge-Factory] Starting Production...")
     engine = get_engine()
-    
+
     # 1. Identify source PDFs
     pdfs = [f for f in os.listdir(SAMPLE_DIR) if f.lower().endswith(".pdf")]
     if not pdfs:
@@ -22,13 +21,13 @@ def knowledge_factory():
 
     print(f"  [Factory] Found {len(pdfs)} source reports.")
     os.makedirs(os.path.dirname(DATASET_PATH), exist_ok=True)
-    
+
     new_samples = 0
-    
+
     for pdf in pdfs:
         pdf_path = os.path.join(SAMPLE_DIR, pdf)
         print(f"\n📄 [Process] Extracting knowledge from: {pdf}")
-        
+
         try:
             from local_ocr_tool import extract_text_from_pdf
             ocr_res = extract_text_from_pdf(pdf_path)
@@ -37,14 +36,14 @@ def knowledge_factory():
         except Exception as e:
             print(f"  [Error] OCR failed: {e}")
             continue
-            
+
         # Distillation Chunks
         chunk_size = 4000
         chunks = [sinhala_text[i:i + chunk_size] for i in range(0, len(sinhala_text), chunk_size - 400)]
-        
+
         for idx, chunk in enumerate(chunks):
             print(f"  🧠 [Distill] Chunk {idx+1}/{len(chunks)}...")
-            
+
             teacher_prompt = (
                 "You are the Master Sri Lanka Police Data Architect. Study this Sinhala report snippet.\n\n"
                 "TASK:\n"
@@ -54,7 +53,7 @@ def knowledge_factory():
                 "OUTPUT: Respond ONLY with a JSON list [ { 'sinhala_raw': '...', 'english_json': {...} }, ... ]\n\n"
                 f"SNIPPET:\n{chunk}"
             )
-            
+
             # Try Teachers in order of intelligence/availability
             result = None
             used_teacher = None
@@ -66,18 +65,18 @@ def knowledge_factory():
                     used_teacher = t
                     break
                 print(f"    [Teacher {t} Failed: {res[:60]}]")
-            
+
             if not result:
-                print(f"    ❌ All Teachers failed for this chunk.")
+                print("    ❌ All Teachers failed for this chunk.")
                 continue
-                
+
             try:
                 # Optimized cleaning for multiple potential teachers
                 match = re.search(r'\[.*\]', result, re.DOTALL)
                 if not match:
                     cleaned = result.replace("```json", "").replace("```", "").strip()
                     match = re.search(r'\[.*\]', cleaned, re.DOTALL)
-                
+
                 if match:
                     data_list = json.loads(match.group(0))
                     with open(DATASET_PATH, "a", encoding="utf-8") as f:
@@ -85,7 +84,7 @@ def knowledge_factory():
                             raw_s = entry.get("sinhala_raw", "").strip()
                             gold_j = entry.get("english_json", {})
                             if not raw_s or len(gold_j) < 5: continue
-                            
+
                             sample = {
                                 "messages": [
                                     {"role": "system", "content": "You are a professional Sri Lanka Police AI Architect."},
@@ -98,7 +97,7 @@ def knowledge_factory():
                     print(f"    ✅ Added {len(data_list)} samples (Teacher: {used_teacher}).")
             except Exception as e:
                 print(f"    ⚠️ Parsing error: {e}")
-                
+
     print(f"\n🏆 [Factory] Done! Produced {new_samples} expert samples.")
 
 if __name__ == "__main__":

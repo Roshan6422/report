@@ -3,37 +3,40 @@ General Report Processor
 Automated processing of incidents for General Situation Reports with detailed narratives
 """
 
-from ai_engine_manager import AIEngineManager
-from general_report_prompts import GENERAL_REPORT_SYSTEM_PROMPT, create_general_report_prompt
-from general_report_engine import generate_general_report, html_to_pdf
-import json
 import re
+
+from ai_engine_manager import AIEngineManager
+from general_report_engine import generate_general_report, html_to_pdf
+from general_report_prompts import (
+    GENERAL_REPORT_SYSTEM_PROMPT,
+    create_general_report_prompt,
+)
 
 
 class GeneralReportProcessor:
     """Process incidents and generate General Situation Reports."""
-    
+
     def __init__(self):
         self.ai_manager = AIEngineManager()
-    
+
     def generate_detailed_narrative(self, incident_data):
         """Generate detailed narrative for a single incident using AI."""
-        
+
         # Create prompt
         user_prompt = create_general_report_prompt(incident_data)
-        
+
         # Get AI response (call_ai returns a string; errors start with "❌")
         response = self.ai_manager.call_ai(
             prompt=user_prompt,
             system_prompt=GENERAL_REPORT_SYSTEM_PROMPT,
         )
-        
+
         if response and not str(response).startswith("❌"):
             narrative = str(response).strip()
-            
+
             # Extract components
             station, summary, body, ref = self._parse_narrative(narrative)
-            
+
             return {
                 "station": station,
                 "summary": summary,
@@ -47,58 +50,58 @@ class GeneralReportProcessor:
                 "error": str(response) if response else "Unknown error",
                 "narrative": None
             }
-    
+
     def _parse_narrative(self, narrative):
         """Parse narrative into components."""
-        
+
         # Extract station name (before first colon)
         station_match = re.match(r'^([A-Z\s]+):', narrative)
         station = station_match.group(1).strip() if station_match else ""
-        
+
         # Extract summary (text in first parentheses)
         summary_match = re.search(r'\(([^)]+)\)', narrative)
         summary = summary_match.group(1).strip() if summary_match else ""
-        
+
         # Extract reference code (last parentheses)
         ref_match = re.search(r'\(([CO]TM\.\d+)\)\s*$', narrative)
         ref = ref_match.group(1) if ref_match else ""
-        
+
         # Body is everything between station and reference
         body = narrative
         if station:
             body = body.split(':', 1)[1].strip()
         if ref:
             body = body.rsplit('(', 1)[0].strip()
-        
+
         return station, summary, body, ref
-    
+
     def process_batch(self, incidents):
         """Process multiple incidents and generate narratives."""
-        
+
         results = []
-        
+
         print(f"\nProcessing {len(incidents)} incidents...")
         print("=" * 80)
-        
+
         for i, inc in enumerate(incidents, 1):
             print(f"\n[{i}/{len(incidents)}] Processing: {inc.get('station')}")
-            
+
             result = self.generate_detailed_narrative(inc)
-            
+
             if result.get("narrative"):
                 print(f"  ✓ Generated: {result['word_count']} words")
                 results.append(result)
             else:
                 print(f"  ✗ Failed: {result.get('error', 'Unknown error')}")
-        
+
         print("\n" + "=" * 80)
         print(f"✅ Completed: {len(results)}/{len(incidents)} successful")
-        
+
         return results
-    
+
     def categorize_for_general_report(self, incidents):
         """Categorize incidents into 10 General Report sections."""
-        
+
         sections = {
             "01. SERIOUS CRIMES COMMITTED:": [],
             "02. RAPE, SEXUAL ASSAULT & CHILD ABUSE:": [],
@@ -111,59 +114,59 @@ class GeneralReportProcessor:
             "09. ARREST OF TRI-FORCES MEMBERS:": [],
             "10. OTHER MATTERS:": []
         }
-        
+
         for inc in incidents:
             body_lower = inc.get("body", "").lower()
             summary_lower = inc.get("summary", "").lower()
-            
+
             # Combine body and summary for keyword searching
             text_to_search = body_lower + " " + summary_lower
-            
+
             # 01. SERIOUS CRIMES COMMITTED (Homicides, Robberies, House Breaking & Theft, Vehicle Thefts, Property Thefts)
-            if any(kw in text_to_search for kw in 
+            if any(kw in text_to_search for kw in
                      ["homicide", "murder", "robbery", "house breaking", "vehicle theft", "property theft", "theft", "burglary", "stolen"]):
                 sections["01. SERIOUS CRIMES COMMITTED:"].append(inc)
-                
+
             # 02. RAPE, SEXUAL ASSAULT & CHILD ABUSE (Rape & Sexual Abuse)
-            elif any(kw in text_to_search for kw in 
+            elif any(kw in text_to_search for kw in
                    ["rape", "sexual assault", "sexual abuse", "child abuse", "molestation", "indecent"]):
                 sections["02. RAPE, SEXUAL ASSAULT & CHILD ABUSE:"].append(inc)
-            
+
             # 03. FATAL ACCIDENTS (Fatal accidents)
             elif ("accident" in text_to_search or "crash" in text_to_search) and ("fatal" in text_to_search or "dead" in text_to_search or "death" in text_to_search) and not any(kw in text_to_search for kw in ["police accident", "police vehicle", "damage to police"]):
                 sections["03. FATAL ACCIDENTS:"].append(inc)
-            
+
             # 04. POLICE OFFICERS / VEHICLES ACCIDENTS & DAMAGES (Police Accidents, Serious injuries & damages to police property)
             elif any(kw in text_to_search for kw in ["police accident", "police vehicle", "police property", "damage to police", "serious injury to police property", "damages to police"]):
                 sections["04. POLICE OFFICERS/VEHICLES INVOLVED IN ROAD ACCIDENTS AND DAMAGES TO SRI LANKA POLICE PROPERTY: "].append(inc)
-            
+
             # 05. FINDING OF DEAD BODIES (SUSPICIOUS) (Unidentified dead bodies)
             elif any(kw in text_to_search for kw in ["dead body", "unidentified body", "suspicious death", "corpse", "unidentified dead bodies"]):
                 sections["05. FINDING OF DEAD BODIES UNDER SUSPICIOUS CIRCUMSTANCES:"].append(inc)
-            
+
             # 06. POLICE OFFICERS CHARGED / COMPLAINTS (Misconduct of police officers)
             elif any(kw in text_to_search for kw in ["police misconduct", "complaint against police", "officer charged", "police charged", "misconduct of police officers"]):
                 sections["06. POLICE OFFICERS CHARGED IN COURTS / COMPLAINTS AGAINST POLICE / ALLEGED ACTS OF INDISCIPLINE BY POLICE OFFICERS"].append(inc)
-            
+
             # 07. SERIOUS INJURY / ILLNESS / DEATHS OF POLICE OFFICERS (Serious injuries, Deaths of police officers, Hospital admissions)
             elif any(kw in text_to_search for kw in ["police officer injured", "police officer death", "police officer illness", "hospital admission", "hospitalized police", "injury to police", "death of police officer"]):
                 # Ensure it doesn't just match generic police terms, but specific injury/death of police context
                 sections["07. SERIOUS INJURY/ ILLNESSES/ DEATHS OF POLICE OFFICERS:"].append(inc)
-            
+
             # 08. DETECT OF NARCOTIC & ILLEGAL LIQUOR (Detections)
             elif any(kw in text_to_search for kw in ["narcotic", "drug", "heroin", "cocaine", "cannabis", "illegal liquor", "illicit liquor", "kasippu", "methamphetamine", "ice", "ganja", "detection"]):
                 sections["08. DETECT OF NARCOTIC AND ILLEGAL LIQUOR:"].append(inc)
-            
+
             # 09. ARREST OF TRI-FORCES MEMBERS (Arrests)
             elif any(kw in text_to_search for kw in ["tri-force", "army", "navy", "air force", "soldier", "military", "tri-forces", "tri-forces members"]) and "arrest" in text_to_search:
                 sections["09. ARREST OF TRI-FORCES MEMBERS:"].append(inc)
-            
+
             # 10. OTHER MATTERS (Protests & Strikes, Disappearances, Suicides, Incidents regarding foreigners, Others)
             else:
                 sections["10. OTHER MATTERS:"].append(inc)
-        
+
         return sections
-    
+
     def organize_by_province(self, categorized_sections, show_all_provinces=True):
         """Organize incidents by province within each section in official order.
         
@@ -171,11 +174,11 @@ class GeneralReportProcessor:
             categorized_sections: Dict of section titles to incidents
             show_all_provinces: If True, show ALL 9 provinces with "Nil" for empty ones
         """
-        
+
         # Official province order (MUST be in this exact order)
         OFFICIAL_PROVINCE_ORDER = [
             "WESTERN",
-            "SABARAGAMUWA", 
+            "SABARAGAMUWA",
             "SOUTHERN",
             "UVA",
             "CENTRAL",
@@ -184,13 +187,13 @@ class GeneralReportProcessor:
             "EASTERN",
             "NORTHERN"
         ]
-        
+
         result = []
-        
+
         for section_title, incidents in categorized_sections.items():
             # Group incidents by province
             provinces_dict = {}
-            
+
             for inc in incidents:
                 prov = inc.get("province", "UNKNOWN").upper()
                 # Normalize province names
@@ -198,14 +201,14 @@ class GeneralReportProcessor:
                     prov = "NORTH WESTERN"
                 elif prov == "NORTH-CENTRAL" or prov == "NORTHCENTRAL":
                     prov = "NORTH CENTRAL"
-                
+
                 if prov not in provinces_dict:
                     provinces_dict[prov] = []
                 provinces_dict[prov].append(inc)
-            
+
             # Convert to list format in official order
             provinces_list = []
-            
+
             if show_all_provinces:
                 # Show ALL 9 provinces, with "Nil" for empty ones
                 for prov_name in OFFICIAL_PROVINCE_ORDER:
@@ -230,7 +233,7 @@ class GeneralReportProcessor:
                             "name": prov_name,
                             "incidents": provinces_dict[prov_name]
                         })
-            
+
             # Add any provinces not in official order (shouldn't happen)
             for prov_name, incs in provinces_dict.items():
                 if prov_name not in OFFICIAL_PROVINCE_ORDER:
@@ -238,63 +241,63 @@ class GeneralReportProcessor:
                         "name": prov_name,
                         "incidents": incs
                     })
-            
+
             result.append({
                 "title": section_title,
                 "provinces": provinces_list
             })
-        
+
         return result
-    
+
     def generate_report(self, incidents, date_range, output_html, output_pdf=None, table_counts=None):
         """Complete pipeline: categorize, organize, and generate report."""
-        
+
         print("\n" + "=" * 80)
         print("GENERAL SITUATION REPORT - Complete Pipeline")
         print("=" * 80)
-        
+
         # Categorize
         print("\n1. Categorizing incidents...")
         categorized = self.categorize_for_general_report(incidents)
-        
+
         for section, incs in categorized.items():
             if incs:
                 print(f"   {section} → {len(incs)} incidents")
-        
+
         # Organize by province
         print("\n2. Organizing by province...")
         sections = self.organize_by_province(categorized)
-        
+
         # Build report data
         print("\n3. Building report data structure...")
         report_data = {
             "date_range": date_range,
             "sections": sections
         }
-        
+
         if table_counts is not None:
             report_data["table_counts"] = table_counts
-        
+
         # Generate HTML
         print("\n4. Generating HTML report...")
         generate_general_report(report_data, output_html)
-        
+
         # Generate PDF if requested
         if output_pdf:
             print("\n5. Converting to PDF...")
             html_to_pdf(output_html, output_pdf)
-        
+
         print("\n" + "=" * 80)
         print("✅ REPORT GENERATION COMPLETE!")
         print("=" * 80)
-        
+
         return report_data
 
 
 # Example usage
 if __name__ == "__main__":
     processor = GeneralReportProcessor()
-    
+
     # Sample incident data
     sample_incident = {
         "station": "Pussellawa",
@@ -310,13 +313,13 @@ if __name__ == "__main__":
         "reference": "CTM.522",
         "province": "CENTRAL"
     }
-    
+
     print("Testing General Report Processor")
     print("=" * 80)
-    
+
     # Generate narrative
     result = processor.generate_detailed_narrative(sample_incident)
-    
+
     if result.get("narrative"):
         print("\n✅ Generated Narrative:")
         print("-" * 80)

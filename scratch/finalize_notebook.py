@@ -1,8 +1,7 @@
 import json
-import os
 
 nb_path = r"d:\PROJECTS\pdf convert tool\Kaggle_Police_AI_v2.1.ipynb"
-with open(nb_path, "r", encoding="utf-8") as f:
+with open(nb_path, encoding="utf-8") as f:
     nb = json.load(f)
 
 # Remove emojis that cause encoding issues on Windows CLI

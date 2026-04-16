@@ -1,6 +1,7 @@
 import json
 import os
 
+
 class ExpertKnowledgeLoader:
     def __init__(self, jsonl_path="dataset/training_data.jsonl"):
         self.jsonl_path = jsonl_path
@@ -11,9 +12,9 @@ class ExpertKnowledgeLoader:
         if not os.path.exists(self.jsonl_path):
             print(f"  [Knowledge] ⚠️ Knowledge file not found at {self.jsonl_path}")
             return
-        
+
         try:
-            with open(self.jsonl_path, "r", encoding="utf-8") as f:
+            with open(self.jsonl_path, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         self.knowledge.append(json.loads(line))
@@ -29,16 +30,16 @@ class ExpertKnowledgeLoader:
         context = "\n\n### EXPERT REFERENCE EXAMPLES (Sri Lanka Police Standard):\n"
         # Use the most recent/best ones
         examples = self.knowledge[:limit]
-        
+
         for i, pair in enumerate(examples, 1):
             sinhala = pair.get("sinhala", "").strip()
             english = pair.get("english", "").strip()
-            
+
             context += f"Example {i}:\n"
             context += f"Sinhala: {sinhala}\n"
             context += f"Standard English: {english}\n"
             context += "-" * 20 + "\n"
-        
+
         return context
 
 if __name__ == "__main__":

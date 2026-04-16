@@ -23,10 +23,9 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-
 
 # ---------------------------------------------------------------------------
 # Enumerations
@@ -98,17 +97,17 @@ class IncidentRecord(BaseModel):
     victim_suspect_names: str  = Field(default="N/A",     description="Names of involved parties")
 
     # Optional routing / classification metadata
-    province:     Optional[str] = Field(default="WESTERN", description="Province (uppercase)")
-    category_num: Optional[str] = Field(default="00",      description="2-digit category (01–29)")
-    origin_block: Optional[str] = Field(default="General", description="Source block label")
+    province:     str | None = Field(default="WESTERN", description="Province (uppercase)")
+    category_num: str | None = Field(default="00",      description="2-digit category (01–29)")
+    origin_block: str | None = Field(default="General", description="Source block label")
 
     # Internal scoring (populated by pipeline_utils)
-    _confidence:            Optional[float] = None
-    _validation_issues:     Optional[List[str]] = None
-    _filled_from_context:   Optional[bool] = None
-    _multiple_suspects:     Optional[List[str]] = None
-    _no_victim_info:        Optional[bool] = None
-    _past_incident:         Optional[bool] = None
+    _confidence:            float | None = None
+    _validation_issues:     list[str] | None = None
+    _filled_from_context:   bool | None = None
+    _multiple_suspects:     list[str] | None = None
+    _no_victim_info:        bool | None = None
+    _past_incident:         bool | None = None
 
     @field_validator("station")
     @classmethod
@@ -117,7 +116,7 @@ class IncidentRecord(BaseModel):
 
     @field_validator("province")
     @classmethod
-    def normalize_province(cls, v: Optional[str]) -> str:
+    def normalize_province(cls, v: str | None) -> str:
         if not v:
             return Province.WESTERN.value
         v = v.strip().upper().replace(" PROVINCE", "")
@@ -150,7 +149,7 @@ class IncidentRecord(BaseModel):
 
     @field_validator("category_num")
     @classmethod
-    def zero_pad_category(cls, v: Optional[str]) -> Optional[str]:
+    def zero_pad_category(cls, v: str | None) -> str | None:
         if v and v.strip().isdigit():
             return v.strip().zfill(2)
         return v
@@ -164,7 +163,7 @@ class CategorizationOutput(BaseModel):
     category_name:       str   = Field(..., description="Official English category name")
     is_security_related: bool  = Field(default=False, description="True for categories 01–03")
     confidence:          float = Field(..., ge=0.0, le=1.0, description="Model confidence [0, 1]")
-    reasoning:           Optional[str] = Field(default=None, description="Model's brief reasoning")
+    reasoning:           str | None = Field(default=None, description="Model's brief reasoning")
 
     @field_validator("category_num")
     @classmethod
@@ -182,7 +181,7 @@ class CategorizationOutput(BaseModel):
 class ProvinceRecord(BaseModel):
     """A province bucket within a crime section, containing its incident list."""
     name:      str               = Field(..., description="Province name (e.g., WESTERN PROVINCE)")
-    incidents: List[Dict[str, Any]] = Field(default_factory=list)
+    incidents: list[dict[str, Any]] = Field(default_factory=list)
 
     @property
     def incident_count(self) -> int:
@@ -195,11 +194,11 @@ class SectionRecord(BaseModel):
     Contains province-grouped incidents and optional confidence metadata.
     """
     title:       str                  = Field(..., description="Section heading (e.g., '04. Homicides')")
-    count:       Optional[str]        = Field(default="00", description="Zero-padded incident count")
-    provinces:   List[ProvinceRecord] = Field(default_factory=list)
+    count:       str | None        = Field(default="00", description="Zero-padded incident count")
+    provinces:   list[ProvinceRecord] = Field(default_factory=list)
 
     # Populated by pipeline_utils
-    _confidence: Optional[float] = None
+    _confidence: float | None = None
 
     @property
     def total_incidents(self) -> int:
@@ -216,11 +215,11 @@ class SectionRecord(BaseModel):
 class ReportHeader(BaseModel):
     """Metadata block at the top of every daily SLP report."""
     date_range:       str            = Field(..., description="'From 0400 hrs. on Xth Month YYYY to 0400 hrs. on Yth Month YYYY'")
-    report_date:      Optional[str]  = Field(default=None, description="Primary report date (YYYY-MM-DD)")
+    report_date:      str | None  = Field(default=None, description="Primary report date (YYYY-MM-DD)")
     report_type:      str            = Field(default="Daily Incident Report")
     issuing_unit:     str            = Field(default="Sri Lanka Police — Operations Room")
     classification:   str            = Field(default="OFFICIAL")
-    serial_number:    Optional[str]  = Field(default=None, description="Report serial / file ref")
+    serial_number:    str | None  = Field(default=None, description="Report serial / file ref")
 
     @field_validator("date_range")
     @classmethod
@@ -237,13 +236,13 @@ class FullReportOutput(BaseModel):
     """
     header:         ReportHeader               = Field(default_factory=lambda: ReportHeader(date_range="Unknown"))
     date_range:     str                        = Field(default="Unknown", description="Convenience alias")
-    sections:       List[SectionRecord]        = Field(default_factory=list)
-    summary_matrix: Optional[Dict[str, Any]]  = Field(default=None, description="Province × category matrix")
-    case_data:      Optional[List[Dict[str, Any]]] = Field(default=None, description="29-row case breakdown")
+    sections:       list[SectionRecord]        = Field(default_factory=list)
+    summary_matrix: dict[str, Any] | None  = Field(default=None, description="Province × category matrix")
+    case_data:      list[dict[str, Any]] | None = Field(default=None, description="29-row case breakdown")
 
     # Pipeline-injected
-    _confidence:  Optional[float]        = None
-    _enhancement: Optional[Dict[str, Any]] = None
+    _confidence:  float | None        = None
+    _enhancement: dict[str, Any] | None = None
 
     @property
     def total_incidents(self) -> int:
@@ -284,7 +283,7 @@ class SummaryMatrixRow(BaseModel):
         return str(v).zfill(2) if str(v).isdigit() else str(v)
 
     @model_validator(mode="after")
-    def check_arithmetic(self) -> "SummaryMatrixRow":
+    def check_arithmetic(self) -> SummaryMatrixRow:
         """Warn (not raise) if reported ≠ solved + unsolved."""
         try:
             r = int(self.reported) if self.reported != "-" else 0
@@ -307,9 +306,9 @@ class CaseDataRow(BaseModel):
 
 class SummaryMatrix(BaseModel):
     """Full province × crime-category count matrix for the report dashboard."""
-    headers:         List[str]             = Field(default_factory=list)
-    rows:            List[Dict[str, Any]]  = Field(default_factory=list)
-    totals:          List[str]             = Field(default_factory=list)
+    headers:         list[str]             = Field(default_factory=list)
+    rows:            list[dict[str, Any]]  = Field(default_factory=list)
+    totals:          list[str]             = Field(default_factory=list)
     grand_total_all: int                   = Field(default=0)
 
 
@@ -320,14 +319,14 @@ class SummaryMatrix(BaseModel):
 class ExtractedDate(BaseModel):
     raw: str
     pos: int
-    normalized: Optional[str] = None
+    normalized: str | None = None
 
 
 class ExtractedMoney(BaseModel):
     raw:   str
     value: str   # digits-only, no commas
     pos:   int
-    formatted: Optional[str] = None   # e.g. "Rs. 50,000/="
+    formatted: str | None = None   # e.g. "Rs. 50,000/="
 
 
 class ExtractedVehicle(BaseModel):
@@ -343,10 +342,10 @@ class ExtractedPhone(BaseModel):
 
 class PatternExtractionResult(BaseModel):
     """Output of pipeline_utils.extract_all_patterns()."""
-    dates:           List[ExtractedDate]    = Field(default_factory=list)
-    money:           List[ExtractedMoney]   = Field(default_factory=list)
-    vehicles:        List[ExtractedVehicle] = Field(default_factory=list)
-    phones:          List[ExtractedPhone]   = Field(default_factory=list)
+    dates:           list[ExtractedDate]    = Field(default_factory=list)
+    money:           list[ExtractedMoney]   = Field(default_factory=list)
+    vehicles:        list[ExtractedVehicle] = Field(default_factory=list)
+    phones:          list[ExtractedPhone]   = Field(default_factory=list)
     extraction_time: str                    = Field(default_factory=lambda: datetime.now().isoformat())
 
 
@@ -366,7 +365,7 @@ class ConfidenceScore(BaseModel):
     label: str = Field(default="")
 
     @model_validator(mode="after")
-    def set_label(self) -> "ConfidenceScore":
+    def set_label(self) -> ConfidenceScore:
         if self.total >= 0.85:
             object.__setattr__(self, "label", "HIGH")
         elif self.total >= 0.60:
@@ -379,12 +378,12 @@ class ConfidenceScore(BaseModel):
 class ValidationResult(BaseModel):
     """Per-incident validation outcome from pipeline_utils.validate_incident()."""
     incident_station: str             = Field(default="UNKNOWN")
-    issues:           List[str]       = Field(default_factory=list)
-    auto_fixed:       List[str]       = Field(default_factory=list)
+    issues:           list[str]       = Field(default_factory=list)
+    auto_fixed:       list[str]       = Field(default_factory=list)
     passed:           bool            = Field(default=True)
 
     @model_validator(mode="after")
-    def derive_passed(self) -> "ValidationResult":
+    def derive_passed(self) -> ValidationResult:
         critical = [i for i in self.issues if i.startswith("EMPTY_BODY") or i.startswith("MISSING_STATION")]
         object.__setattr__(self, "passed", len(critical) == 0)
         return self
@@ -396,7 +395,7 @@ class ReportValidationSummary(BaseModel):
     total_issues:     int         = 0
     critical_issues:  int         = 0
     warning_issues:   int         = 0
-    results:          List[ValidationResult] = Field(default_factory=list)
+    results:          list[ValidationResult] = Field(default_factory=list)
 
     @property
     def pass_rate(self) -> float:
@@ -428,11 +427,11 @@ class QualityGateResult(BaseModel):
 
 class ContextMemorySnapshot(BaseModel):
     """Serialisable snapshot of ContextMemory at a point in time."""
-    last_location:  Optional[str] = None
-    last_date:      Optional[str] = None
-    last_province:  Optional[str] = None
-    last_dig:       Optional[str] = None
-    last_div:       Optional[str] = None
+    last_location:  str | None = None
+    last_date:      str | None = None
+    last_province:  str | None = None
+    last_dig:       str | None = None
+    last_div:       str | None = None
     stations_seen:  int           = 0
 
 
@@ -455,13 +454,13 @@ class ProcessingLog(BaseModel):
     validation_issues: int               = Field(default=0)
     cache_hit:         bool              = Field(default=False)
     retry_count:       int               = Field(default=0, ge=0)
-    patterns_extracted: Dict[str, Any]  = Field(default_factory=dict)
+    patterns_extracted: dict[str, Any]  = Field(default_factory=dict)
     processing_time_ms: float            = Field(default=0.0, ge=0.0)
-    errors:            List[str]         = Field(default_factory=list)
+    errors:            list[str]         = Field(default_factory=list)
     status:            str               = Field(default="started")
-    engine_used:       Optional[str]     = None
-    quality_gate:      Optional[QualityGateResult] = None
-    context_summary:   Optional[ContextMemorySnapshot] = None
+    engine_used:       str | None     = None
+    quality_gate:      QualityGateResult | None = None
+    context_summary:   ContextMemorySnapshot | None = None
 
     @property
     def succeeded(self) -> bool:
@@ -476,7 +475,7 @@ class EnhancementResult(BaseModel):
     validation_issues:   int                      = 0
     quality_gate:        str                      = ""
     quality_gate_passed: bool                     = False
-    context_summary:     Optional[ContextMemorySnapshot] = None
+    context_summary:     ContextMemorySnapshot | None = None
     processing_time_ms:  float                    = 0.0
 
 
@@ -490,8 +489,8 @@ class SingleKeyStatus(BaseModel):
     provider:        str        = Field(..., description="Provider (Gemini / GitHub / OpenAI)")
     status:          KeyStatus  = Field(default=KeyStatus.UNTESTED)
     usage_today:     int        = Field(default=0, ge=0)
-    remaining_quota: Optional[int] = None
-    last_checked:    Optional[str] = None
+    remaining_quota: int | None = None
+    last_checked:    str | None = None
 
     @property
     def is_usable(self) -> bool:
@@ -501,9 +500,9 @@ class SingleKeyStatus(BaseModel):
 class KeyHealthReport(BaseModel):
     """Full health report across all providers — output of MachineTranslator.get_api_health()."""
     checked_at:   str                        = Field(default_factory=lambda: datetime.now().isoformat())
-    gemini_keys:  List[SingleKeyStatus]      = Field(default_factory=list)
-    github_keys:  List[SingleKeyStatus]      = Field(default_factory=list)
-    openai_keys:  List[SingleKeyStatus]      = Field(default_factory=list)
+    gemini_keys:  list[SingleKeyStatus]      = Field(default_factory=list)
+    github_keys:  list[SingleKeyStatus]      = Field(default_factory=list)
+    openai_keys:  list[SingleKeyStatus]      = Field(default_factory=list)
 
     @property
     def active_gemini_count(self) -> int:
@@ -531,7 +530,7 @@ class TranslationChunkResult(BaseModel):
     translated_text: str   = Field(default="")
     original_length: int   = Field(default=0)
     translated_length: int = Field(default=0)
-    error:           Optional[str] = None
+    error:           str | None = None
 
     @property
     def succeeded(self) -> bool:
@@ -541,24 +540,24 @@ class TranslationChunkResult(BaseModel):
 class TranslationRefinement(BaseModel):
     """AI output for the linguistic refinement / checker stage."""
     refined_narrative:     str            = Field(..., description="Corrected, institutional English text")
-    technical_terms_fixed: List[str]      = Field(default_factory=list, description="Terms that were corrected")
-    detected_station:      Optional[str]  = None
-    detected_date:         Optional[str]  = None
+    technical_terms_fixed: list[str]      = Field(default_factory=list, description="Terms that were corrected")
+    detected_station:      str | None  = None
+    detected_date:         str | None  = None
     sinhala_chars_removed: bool           = Field(default=False)
-    confidence_boost:      Optional[float]= Field(default=None, ge=0.0, le=1.0)
+    confidence_boost:      float | None= Field(default=None, ge=0.0, le=1.0)
 
 
 class FullTranslationOutput(BaseModel):
     """Complete translation pipeline result for one PDF."""
     source_pdf:        str                       = Field(..., description="Original PDF path")
-    sinhala_text:      Optional[str]             = None
+    sinhala_text:      str | None             = None
     english_text:      str                       = Field(default="")
     pages_processed:   int                       = Field(default=0, ge=0)
-    chunk_results:     List[TranslationChunkResult] = Field(default_factory=list)
+    chunk_results:     list[TranslationChunkResult] = Field(default_factory=list)
     primary_engine:    str                       = Field(default="gemini")
     fallback_used:     bool                      = Field(default=False)
     processing_time_s: float                     = Field(default=0.0, ge=0.0)
-    output_txt_path:   Optional[str]             = None
+    output_txt_path:   str | None             = None
 
     @property
     def success_rate(self) -> float:
@@ -577,20 +576,20 @@ class TurboExtractionConfig(BaseModel):
     Runtime configuration for extract_pdf_to_json_turbo().
     Mirrors env-var controlled settings so they can be validated up front.
     """
-    gemini_model_list:      List[str] = Field(
+    gemini_model_list:      list[str] = Field(
         default=["gemini-3-flash-preview", "gemini-2.0-flash", "gemini-2.0-flash-lite"],
         description="Ordered list of Gemini model IDs to attempt"
     )
     max_output_tokens:      int       = Field(default=65536, ge=1024)
     skip_gemini:            bool      = Field(default=False, description="TURBO_SKIP_GEMINI")
-    pdf_extract_ai_engine:  Optional[str] = Field(default=None, description="PDF_EXTRACT_AI_ENGINE")
+    pdf_extract_ai_engine:  str | None = Field(default=None, description="PDF_EXTRACT_AI_ENGINE")
     github_turbo_chunk_chars: int     = Field(default=24000, ge=1000)
     github_chunk_cooldown_s: float    = Field(default=0.0, ge=0.0, le=120.0)
     github_turbo_timeout_s:  int      = Field(default=360, ge=120, le=900)
 
     @field_validator("pdf_extract_ai_engine")
     @classmethod
-    def validate_engine(cls, v: Optional[str]) -> Optional[str]:
+    def validate_engine(cls, v: str | None) -> str | None:
         allowed = {None, "gemini", "openrouter", "groq", "github", "aimlapi"}
         if v not in allowed:
             raise ValueError(f"pdf_extract_ai_engine must be one of {allowed}")
@@ -621,10 +620,10 @@ class AnalyticsInsight(BaseModel):
     total_count:     int        = Field(..., ge=0)
     security_count:  int        = Field(default=0, ge=0,  description="Categories 01–03")
     general_count:   int        = Field(default=0, ge=0,  description="Categories 04–29")
-    top_categories:  List[str]  = Field(default_factory=list, description="Top 3 crime types")
+    top_categories:  list[str]  = Field(default_factory=list, description="Top 3 crime types")
 
     @model_validator(mode="after")
-    def check_totals(self) -> "AnalyticsInsight":
+    def check_totals(self) -> AnalyticsInsight:
         if self.security_count + self.general_count > self.total_count:
             # Clamp general_count if it overflows
             object.__setattr__(self, "general_count", self.total_count - self.security_count)
@@ -635,12 +634,12 @@ class ProvinceSummary(BaseModel):
     """Richer province summary used by the report dashboard."""
     province:          str               = Field(...)
     total_incidents:   int               = Field(default=0, ge=0)
-    by_category:       Dict[str, int]    = Field(default_factory=dict, description="category_num → count")
-    highest_category:  Optional[str]     = None
-    date_range:        Optional[str]     = None
+    by_category:       dict[str, int]    = Field(default_factory=dict, description="category_num → count")
+    highest_category:  str | None     = None
+    date_range:        str | None     = None
 
     @model_validator(mode="after")
-    def compute_highest(self) -> "ProvinceSummary":
+    def compute_highest(self) -> ProvinceSummary:
         if self.by_category:
             top = max(self.by_category, key=self.by_category.get)  # type: ignore[arg-type]
             object.__setattr__(self, "highest_category", top)
@@ -655,13 +654,13 @@ class DailySnapshot(BaseModel):
     report_date:       str                    = Field(..., description="YYYY-MM-DD")
     date_range:        str                    = Field(default="")
     total_incidents:   int                    = Field(default=0, ge=0)
-    province_summaries: List[ProvinceSummary] = Field(default_factory=list)
-    insights:          List[AnalyticsInsight] = Field(default_factory=list)
-    summary_matrix:    Optional[SummaryMatrix]= None
+    province_summaries: list[ProvinceSummary] = Field(default_factory=list)
+    insights:          list[AnalyticsInsight] = Field(default_factory=list)
+    summary_matrix:    SummaryMatrix | None= None
     generated_at:      str                    = Field(default_factory=lambda: datetime.now().isoformat())
 
     @property
-    def top_province(self) -> Optional[str]:
+    def top_province(self) -> str | None:
         if not self.province_summaries:
             return None
         return max(self.province_summaries, key=lambda p: p.total_incidents).province

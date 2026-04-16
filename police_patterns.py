@@ -7,7 +7,6 @@ and province mappings used by both AI and Regex engines.
 System Version: v2.2.0
 """
 
-import re
 
 # =============================================================================
 # 1. SECTION DEFINITIONS
@@ -71,7 +70,7 @@ OFFICIAL_CASE_TABLE_CATEGORIES = [
 # =============================================================================
 
 PROVINCE_LIST = [
-    "WESTERN", "SABARAGAMUWA", "SOUTHERN", "UVA", "CENTRAL", 
+    "WESTERN", "SABARAGAMUWA", "SOUTHERN", "UVA", "CENTRAL",
     "NORTH WESTERN", "NORTH CENTRAL", "EASTERN", "NORTHERN"
 ]
 
