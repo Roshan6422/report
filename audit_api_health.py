@@ -61,7 +61,7 @@ def run_audit():
     gemini_keys = {f"Gemini_{i+1}": v for i, v in enumerate(gemini_list)}
 
     github_items = get_github_keys()
-    github_keys = {k: v for k, v in github_items}
+    github_keys = dict(github_items)
 
     print(f"\n🔍 Testing {len(gemini_keys)} Gemini keys and {len(github_keys)} GitHub keys...\n")
 

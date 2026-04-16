@@ -237,7 +237,7 @@ def generate_general_report(data, output_path):
         content_html += build_section_html(sec)
 
     # 2. Summary Table (9x9)
-    summary_data = data.get("summary_table", [])
+    data.get("summary_table", [])
     summary_table_html = '<div style="text-align:center; font-weight:bold; font-size:14pt; margin-bottom:5mm;">SUMMARY</div>'
     summary_table_html += '<table class="prov-summary-table"><tr><th style="width:30%;"></th>'
     cols = ["Theft", "HB & Theft", "Robberies", "Rape", "Homicide", "Police Acc.", "Fatal Acc.", "Others", "Total"]

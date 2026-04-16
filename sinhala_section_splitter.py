@@ -62,7 +62,6 @@ def split_by_sections(raw_text, report_type="General"):
 
     lines = clean_text.split('\n')
     # More robust pattern: starts with number, then dot/space
-    header_num_pat = r"^\s*(?:[0-9]{1,2}|[IVX]{1,3})[\.\s\)\]\-\:]+"
 
     for line in lines:
         l_strip = line.strip()

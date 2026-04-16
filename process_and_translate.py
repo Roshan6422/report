@@ -122,7 +122,7 @@ def process_and_translate(data, filename, app_config_folder):
     ollama_only = ["ollama"]
 
     r_rules = load_routing_rules()
-    t_rules = load_translation_rules("General") # Default rules
+    load_translation_rules("General") # Default rules
 
     security_pool = []
     general_pool = []

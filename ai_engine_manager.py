@@ -100,7 +100,8 @@ def _post_process_police_data_text(text: str) -> str:
 
 
 def _split_large_text(text, max_chars, overlap=400):
-    """Split text into chunks at paragraph boundaries; hard-split long paragraphs."""
+    """Split text into chunks at paragraph boundaries
+hard-split long paragraphs."""
     if not text:
         return [""]
     text = text.strip()
@@ -133,7 +134,7 @@ def _split_large_text(text, max_chars, overlap=400):
             buf.append(p)
             cur_len += added
         else:
-            flush_buf()
+    flush_buf()
             buf, cur_len = [p], plen
     flush_buf()
     return chunks
@@ -422,7 +423,7 @@ class AIEngineManager:
         if base_eng == "ollama" and self._ollama_consensus_enabled():
             res = self.call_ollama_consensus(prompt, system_prompt, timeout, fast_mode=True)
         else:
-            res = self._dispatch_engine(base_eng, prompt, system_prompt, timeout, target_override)
+    res = self._dispatch_engine(base_eng, prompt, system_prompt, timeout, target_override)
 
         if res and not str(res).startswith("❌") and _is_ai_refusal(res):
             print(f"  [AI] ⚠️ Refusal detected from {base_eng}. Triggering fallback.")
@@ -443,7 +444,8 @@ class AIEngineManager:
 
     def _call_ai_parallel_race(self, engines_to_try: list, prompt: str, system_prompt: str,
                                 timeout: int, model_override: str) -> str:
-        """Invoke all engines at once; return the first successful response."""
+        """Invoke all engines at once
+return the first successful response."""
         import concurrent.futures
 
         max_w = min(len(engines_to_try), max(1, int(os.getenv("AI_RACE_MAX_WORKERS", "8"))))
@@ -516,7 +518,7 @@ class AIEngineManager:
             engines_to_try = [e for e in restricted_list
                               if e in ("ollama", "github", "openrouter", "gemini", "aimlapi", "groq")]
         else:
-            engines_to_try = []
+    engines_to_try = []
             if self.openrouter_key and "openrouter" not in self.offline_engines:
                 engines_to_try.append("openrouter")
             if self.github_keys and "github" not in self.offline_engines:
@@ -556,7 +558,7 @@ class AIEngineManager:
                     print("  [AI] 🛡️ Ollama → 500 OVERLOAD. Marking OFFLINE until restart.")
                     self.offline_engines.add(base_eng)
                 else:
-                    self.failure_counts[base_eng] = self.failure_counts.get(base_eng, 0) + 1
+    self.failure_counts[base_eng] = self.failure_counts.get(base_eng, 0) + 1
                     if self.failure_counts[base_eng] >= 3:
                         print(f"  [AI] ⚠️ {base_eng} failing repeatedly. Marking OFFLINE.")
                         self.offline_engines.add(base_eng)
@@ -698,7 +700,8 @@ class AIEngineManager:
     def call_parallel(self, prompt: str,
                       system_prompt: str = "Maximum Accuracy Mode",
                       timeout: int = 120) -> dict:
-        """Call all configured engines in parallel; returns per-engine results dict."""
+        """Call all configured engines in parallel
+returns per-engine results dict."""
         import concurrent.futures
 
         engines = [
@@ -918,7 +921,8 @@ class AIEngineManager:
         seen, out = set(), []
         for e in preferred:
             if e in available and e not in seen:
-                out.append(e); seen.add(e)
+                out.append(e)
+seen.add(e)
         for e in available:
             if e not in seen:
                 out.append(e)

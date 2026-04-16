@@ -802,21 +802,6 @@ class PoliceDesktopApp(ctk.CTk):
         else:
             messagebox.showinfo("Empty", "No text to copy yet.")
 
-    def update_ollama_status(self):
-        """Check if local Ollama engine is running (background)."""
-        import requests
-        try:
-            r = requests.get("http://localhost:11434/api/tags", timeout=2)
-            if r.status_code == 200:
-                self.ollama_status.configure(text="🤖 Local AI Engine Ready", text_color="#10b981")
-            else:
-                self.ollama_status.configure(text="⚠️ Local AI Engine Offline", text_color="#f59e0b")
-        except Exception:
-            self.ollama_status.configure(text="❌ Local AI Engine Missing", text_color="#ef4444")
-
-    # =========================================================================
-    # RECENT REPORTS
-    # =========================================================================
     def refresh_recent_reports(self):
         """Fetch and display the last 10 generated reports."""
         for widget in self.recent_scroll.winfo_children():
@@ -832,7 +817,7 @@ class PoliceDesktopApp(ctk.CTk):
                 fname = finfo["filename"]
                 fpath = finfo["filepath"]
                 ftype = finfo["file_type"]
-                cat = finfo["category"] or "Report"
+                finfo["category"] or "Report"
 
                 # Truncate long filenames
                 display_name = (fname[:22] + "...") if len(fname) > 25 else fname
@@ -887,7 +872,7 @@ class PoliceDesktopApp(ctk.CTk):
             # Update UI from thread
             self.after(0, lambda: self._update_api_ui(display_text))
         except Exception:
-            self.after(0, lambda: self._update_api_ui(f"❌ Check Failed: {str(e)[:50]}"))
+            self.after(0, lambda: self._update_api_ui("❌ Check Failed"))
 
     def _update_api_ui(self, text):
         """Update the text box and button state."""
@@ -1026,7 +1011,7 @@ class PoliceDesktopApp(ctk.CTk):
 
     def toggle_kaggle_mode(self):
         """Toggle between Local and Remote (Kaggle) Ollama."""
-        prefer_kaggle = True if self.kaggle_switch.get() else False
+        prefer_kaggle = bool(self.kaggle_switch.get())
         try:
             get_engine().set_ollama_preference(prefer_kaggle)
             status = "Kaggle (Remote) AI Enabled" if prefer_kaggle else "Local Master AI Enabled"

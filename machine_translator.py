@@ -76,9 +76,7 @@ def _is_gemini_quota_or_rate_limit(msg) -> bool:
         return True
     if "quota" in s and any(x in s for x in ("exceed", "limit", "exhausted", "free_tier")):
         return True
-    if "rate" in s and "limit" in s:
-        return True
-    return False
+    return bool("rate" in s and "limit" in s)
 
 
 def _mt_skip_local_ocr_fallback(last_error=None) -> bool:
@@ -1668,7 +1666,7 @@ class MachineTranslator:
         try:
             import openai
         except ImportError:
-            raise RuntimeError("openai package not installed. Run: pip install openai")
+            raise RuntimeError("openai package not installed. Run: pip install openai") from None
 
         openai_keys = _load_openai_keys()
         if not openai_keys:

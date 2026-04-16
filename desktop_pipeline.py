@@ -617,7 +617,7 @@ def process_pdf_sinhala_split_then_translate(pdf_path, progress_callback=None, o
             }
             table_counts[pad] = len(raw_texts)
             if raw_texts:
-                _safe_callback(progress_callback, pad, category_summary[padded_cat])
+                _safe_callback(progress_callback, pad, category_summary[pad])
             preview_chunks.extend(translated_items)
 
     for pad in [str(i).zfill(2) for i in range(1, 30)]:

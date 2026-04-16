@@ -316,7 +316,7 @@ class SinhalaPoliceReportExtractor:
         """
         summary = {}
 
-        for cat_num in self.categories.keys():
+        for cat_num in self.categories:
             count = self.extract_category_count(text, cat_num)
 
             summary[cat_num] = {
@@ -567,10 +567,6 @@ def main():
             print()
         else:
             print("❌ Pipeline failed to complete successfully.")
-
-    except Exception as e:
-        print(f"❌ Error in institutional pipeline: {e}")
-        import traceback; traceback.print_exc()
 
     except ImportError as e:
         print(f"⚠ Report generation skipped: {e}")

@@ -95,9 +95,8 @@ def _create_schema(conn: sqlite3.Connection):
             status          TEXT DEFAULT 'PAIRED',  -- PAIRED / MISSING_ENG / MISSING_SIN / SKIPPED
             added_at        TEXT DEFAULT (datetime('now')),
             UNIQUE(report_date, report_type)        -- Prevent duplicates
-        );
-
-        -- Formatted training examples
+        )
+-- Formatted training examples
         CREATE TABLE IF NOT EXISTS training_examples (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             pair_id         INTEGER REFERENCES pdf_pairs(id),
@@ -108,19 +107,17 @@ def _create_schema(conn: sqlite3.Connection):
             assistant_reply TEXT NOT NULL,
             exported        INTEGER DEFAULT 0,      -- 1 = already in JSONL
             created_at      TEXT DEFAULT (datetime('now'))
-        );
-
-        -- Export history log
+        )
+-- Export history log
         CREATE TABLE IF NOT EXISTS export_log (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             exported_at     TEXT DEFAULT (datetime('now')),
             example_count   INTEGER,
             output_path     TEXT
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_pairs_date ON pdf_pairs(report_date);
-        CREATE INDEX IF NOT EXISTS idx_examples_exported ON training_examples(exported);
-    """)
+        )
+CREATE INDEX IF NOT EXISTS idx_pairs_date ON pdf_pairs(report_date)
+CREATE INDEX IF NOT EXISTS idx_examples_exported ON training_examples(exported)
+""")
     conn.commit()
 
 # -----------------------------------------------------------------------------
@@ -190,7 +187,7 @@ def build_pairs() -> list:
         elif s:
             pairs.append({"date": date, "type": rtype, "sinhala": s[0], "english": None, "status": "MISSING_ENG"})
         else:
-            pairs.append({"date": date, "type": rtype, "sinhala": None, "english": e[0], "status": "MISSING_SIN"})
+    pairs.append({"date": date, "type": rtype, "sinhala": None, "english": e[0], "status": "MISSING_SIN"})
     return pairs
 
 def upsert_pair(conn: sqlite3.Connection, p: dict):
@@ -369,9 +366,9 @@ def main():
                     print(f"✅ Success! ({len(recovered_text)}c recovered)")
                     continue
                 else:
-                    print("❌ No data found in DB.")
+    print("❌ No data found in DB.")
             else:
-                print(f"  {tag}  ⚠️  {p['status']}")
+    print(f"  {tag}  ⚠️  {p['status']}")
 
             upsert_pair(conn, p)
             continue
