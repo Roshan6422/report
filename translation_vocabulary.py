@@ -2,12 +2,11 @@
 PROVINCES_SINHALA = {
     "බස්නාහිර": "Western",
     "දකුණ": "Southern",
+    "සබරගමුව": "Sabaragamuwa",
     "මධ්‍යම": "Central",
     "වයඹ": "North Western",
-    "උතුරු මැද": "North Central",   # ✅ FIX: spacing variant
-    "උතුරුමැද": "North Central",
+    "උතුරු මැද": "North Central",  
     "ඌව": "Uva",
-    "සබරගමුව": "Sabaragamuwa",
     "නැගෙනහිර": "Eastern",
     "උතුර": "Northern",
     "විශේෂ": "Special"
@@ -24,13 +23,12 @@ INCIDENT_TEMPLATES = {
 
 
 COMMON_PHRASES = {
-    "අත්අඩංගුලට": "arrested",
-    "අත්අඩංගුවට": "arrested",  # ✅ FIX: correct Sinhala spelling
+    
+    "අත්අඩංගුවට": "arrested",
     "මරණය": "death",
-    "තුවාල": "injured",
-    "තුවාලයි": "injured",      # ✅ FIX: variation
+    "තුවාලයි": "injured",    
     "සැකකරු": "suspect",
-    "සැකකරුවන්": "suspects"   # ✅ FIX: plural support
+    "සැකකරුවන්": "suspects"  
 }
 
 
@@ -61,7 +59,7 @@ KEYWORDS_SINHALA = {
     "HB & Theft": [
         "BURGLARY", "HOUSE BREAKING", "HOUSE BREAK-IN",
         "ENTERED THROUGH WINDOW",
-        "ගෙවල් බිදුම්", "ගෙබිදුම්"  # ✅ FIX: Sinhala variation
+        "ගෙවල් බිදුම්", "ගෙබිදුම්"  
     ],
 
     "Rape & Sexual Abuse": [

@@ -9,10 +9,82 @@ System Version: v2.1.0
 
 import re
 import datetime
-from patterns import SECTION_HEADER_PATTERN, INCIDENT_START_PATTERN, HIERARCHY_MARKER_PATTERN, GENERAL_SECTIONS, SECURITY_SECTIONS
+from police_patterns import SECTION_HEADER_PATTERN, INCIDENT_START_PATTERN, HIERARCHY_MARKER_PATTERN, GENERAL_SECTIONS, SECURITY_SECTIONS
 import analytics_engine
 from translation_vocabulary import PROVINCES_SINHALA
-from station_mapping import SINHALA_TO_ENGLISH, get_station_info
+from station_mapping import SINHALA_TO_ENGLISH, get_station_info, STATION_MAP
+
+
+def structure_sinhala_with_regex(text, report_type="General"):
+    """
+    Adapter for processing raw Sinhala text without AI.
+    Integrates with app.py's SinhalaPoliceReportExtractor.
+    """
+    # Import locally to avoid circular imports if any
+    from app import SinhalaPoliceReportExtractor
+    from sinhala_mapping import GENERAL_SECTION_ROUTING, SECURITY_SECTION_ROUTING
+    
+    print(f"  [Sinhala Adapter] Extracting structured data from raw Sinhala text...")
+    extractor = SinhalaPoliceReportExtractor()
+    extracted_data = extractor.extract_all_from_text(text)
+    
+    # 1. Date Range
+    date_range = extracted_data.get("header", {}).get("report_period", "Daily Incident Report")
+    
+    # 2. Build Sections
+    # Use the routing to group categories into sections
+    routing = SECURITY_SECTION_ROUTING if report_type == "Security" else GENERAL_SECTION_ROUTING
+    sections = []
+    
+    for section_title, category_ids in routing.items():
+        provinces_dict = {}
+        
+        for cid in category_ids:
+            cat_data = extracted_data.get("categories", {}).get(cid, {})
+            incidents = cat_data.get("incidents", [])
+            
+            for inc in incidents:
+                # Basic translation for station if available
+                st_sin = inc.get("police_station", "Unknown")
+                st_en = SINHALA_TO_ENGLISH.get(st_sin, st_sin).upper()
+                
+                # Get hierarchy
+                info = get_station_info(st_en)
+                prov_name = info.get("province", "UNKNOWN").upper()
+                if "PROVINCE" not in prov_name:
+                    prov_name += " PROVINCE"
+                
+                if prov_name not in provinces_dict:
+                    provinces_dict[prov_name] = []
+                
+                # Basic incident description
+                body = inc.get("description", "Police incident reported.")
+                
+                provinces_dict[prov_name].append({
+                    "station": st_en,
+                    "body": body,
+                    "hierarchy": [
+                        f"S/DIG {prov_name.replace(' PROVINCE', '')}",
+                        info["dig"],
+                        info["div"]
+                    ],
+                    "ctm": inc.get("report_time", ""), 
+                })
+        
+        province_list = [{"name": p, "incidents": incs} for p, incs in provinces_dict.items()]
+        total = sum(len(p["incidents"]) for p in province_list)
+        
+        sections.append({
+            "title": section_title,
+            "count": str(total).zfill(2),
+            "provinces": province_list
+        })
+        
+    return {
+        "date_range": date_range,
+        "sections": sections,
+        "date_stamp": datetime.datetime.now().strftime("%dth %B %Y")
+    }
 
 
 def _strip_sinhala(text):
@@ -29,7 +101,16 @@ def structure_with_regex(text, report_type="General"):
     """Main entry point for Zero-AI parsing."""
     print(f"  [Regex Engine] Structuring '{report_type}' report...")
 
-    # Pre-clean: strip Sinhala and stray asterisks from input
+    # 0. Check for purely Sinhala input
+    sinhala_chars = len(re.findall(r'[\u0D80-\u0DFF]', text))
+    total_chars = len(text)
+    is_sinhala = total_chars > 0 and (sinhala_chars / total_chars) > 0.3
+    
+    if is_sinhala:
+        print(f"  [Regex Engine] Detected Sinhala PDF ({sinhala_chars / total_chars:.1%}). Using Sinhala Adapter...")
+        return structure_sinhala_with_regex(text, report_type)
+
+    # Pre-clean: strip Sinhala and stray asterisks from input (only for English-first processing)
     text = _strip_sinhala(text)
 
     # 1. Date Range & Prepared By

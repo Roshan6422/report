@@ -8,211 +8,24 @@ Based on official sample dated 17th-18th March 2026
 
 import os
 import re
-from datetime import datetime
 
-# 100% PIXEL-PERFECT TEMPLATE: EXACT MATCH TO OFFICIAL SECURITY SITUATION REPORT
-HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Situation Report</title>
-    <style>
-        @page { size: A4; margin: 25mm 25mm 20mm 25mm; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Times New Roman', Times, serif; 
-            margin: 0; 
-            padding: 0; 
-            background: #ffffff; 
-            color: #000000; 
-            font-size: 11pt; 
-            line-height: 1.15; 
-        }
-        .page { 
-            width: 210mm; 
-            min-height: 297mm; 
-            padding: 25mm 25mm 20mm 25mm; 
-            margin: 0 auto; 
-            background: white; 
-            position: relative; 
-            box-sizing: border-box; 
-        }
-        
-        /* PAGE NUMBER - Top right, Times New Roman 11pt */
-        .page-num { 
-            text-align: right; 
-            font-family: 'Times New Roman', Times, serif; 
-            font-size: 11pt; 
-            margin-bottom: 8mm; 
-            font-weight: normal;
-        }
-        
-        /* HEADER - Exact spacing from sample */
-        .header { text-align: center; margin-bottom: 0; }
-        .confidential { 
-            font-weight: bold; 
-            font-size: 14pt; 
-            margin-bottom: 3mm; 
-            text-align: center; 
-            font-family: 'Times New Roman', Times, serif;
-        }
-        .logo { 
-            width: 28mm; 
-            height: auto; 
-            margin: 0 auto 3mm auto; 
-            display: block; 
-        }
-        .ig-address { 
-            font-weight: bold; 
-            font-size: 11pt; 
-            margin-bottom: 0mm; 
-            line-height: 1.2;
-        }
-        .ig-title { 
-            font-weight: bold; 
-            font-size: 11pt; 
-            margin-bottom: 5mm; 
-        }
-        .report-title { 
-            font-size: 18pt; 
-            font-weight: bold; 
-            margin: 3mm 0 2mm 0; 
-            text-align: center; 
-            letter-spacing: 0.3pt;
-        }
-        .date-range { 
-            font-weight: bold; 
-            font-size: 11pt; 
-            text-decoration: underline; 
-            margin-bottom: 5mm; 
-            text-align: center; 
-            display: block; 
-        }
-        sup { font-size: 0.7em; vertical-align: super; line-height: 0; }
-
-        /* SECTION HEADERS - Bold, 11pt, exact spacing */
-        .section-header { 
-            font-weight: bold; 
-            font-size: 11pt; 
-            margin-top: 3mm; 
-            margin-bottom: 3mm; 
-            text-align: left;
-        }
-        
-        /* PROVINCE HEADING - Centered, bold, 11pt */
-        .province-heading { 
-            text-align: center; 
-            font-weight: bold; 
-            font-size: 11pt; 
-            margin: 4mm 0 3mm 0; 
-            letter-spacing: 0.5pt;
-        }
-        
-        /* INCIDENT LAYOUT - Two column with exact measurements from sample */
-        .incident-block { 
-            display: table; 
-            width: 100%; 
-            margin-bottom: 3mm; 
-            page-break-inside: avoid;
-        }
-        .dig-side { 
-            display: table-cell; 
-            width: 28%; 
-            vertical-align: top; 
-            font-weight: bold; 
-            font-size: 11pt; 
-            line-height: 1.15; 
-            padding-right: 3mm;
-        }
-        .dig-district { 
-            margin-bottom: 0mm; 
-        }
-        .dig-division { 
-            font-style: italic; 
-            margin-top: 0mm;
-        }
-        .body-side { 
-            display: table-cell; 
-            width: 72%; 
-            vertical-align: top; 
-            text-align: justify; 
-            font-size: 11pt; 
-            line-height: 1.15; 
-        }
-        .station-name { 
-            font-weight: bold; 
-        }
-        .incident-title { 
-            font-weight: bold; 
-        }
-
-        /* SIGNATURE BLOCK - Exact positioning from sample */
-        .sig-section { 
-            margin-top: 10mm; 
-            page-break-inside: avoid;
-        }
-        .sig-line { 
-            margin-top: 8mm; 
-            font-size: 11pt; 
-        }
-        .sig-prepared { 
-            margin-bottom: 15mm;
-        }
-        .sig-checked { 
-            text-align: left; 
-            line-height: 1.3;
-        }
-
-        /* DISTRIBUTION LIST - Exact formatting from sample */
-        .distribution { 
-            margin-top: 15mm; 
-            font-size: 11pt; 
-            line-height: 1.3; 
-            page-break-inside: avoid;
-        }
-        .dist-title { 
-            font-weight: bold; 
-            margin-bottom: 3mm; 
-        }
-        .dist-item { 
-            margin-bottom: 1mm; 
-            padding-left: 8mm;
-            text-indent: -8mm;
-        }
-
-        .no-print { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-        @media print { 
-            .no-print { display: none; } 
-            body { background: white; } 
-            .page { 
-                margin: 0; 
-                box-shadow: none; 
-                page-break-after: always; 
-            } 
-        }
-    </style>
-</head>
-<body>
-    <div class="no-print"><button onclick="window.print()" style="padding:10px 20px; cursor:pointer; background:#333; color:white; border-radius:5px; font-weight:bold;">🖨️ Print / Save as PDF</button></div>
-    {{ ALL_PAGES }}
-</body>
-</html>"""
+from institutional_report_pdf import (
+    build_institutional_html_document,
+    build_report_header,
+    format_date_range_for_header,
+    get_official_appendices,
+    html_to_pdf,
+    sanitize_html_for_pdf,
+    signature_report_date_string,
+)
 
 PAGE_TEMPLATE = """<div class="page">
     <div class="page-num">{{ PAGE_NUM }}</div>
-    <div class="header">
-        <div class="confidential">Confidential</div>
-        <img src="{{ LOGO_PATH }}" class="logo">
-        <div class="ig-address">IG's Command / Information Division, Mirihana, Sri Lanka.</div>
-        <div class="ig-title">Inspector General of Police.</div>
-        <div class="report-title">Security Situation Report</div>
-        <div class="date-range">{{ DATE_RANGE }}</div>
-    </div>
     {{ CONTENT }}
-    {{ APPENDICES }}
 </div>"""
 
+
+import html as html_module
 
 def extract_hierarchy(hierarchy_data):
     """Extract DIG District and Division exactly as shown in sample."""
@@ -242,53 +55,72 @@ def extract_hierarchy(hierarchy_data):
     return dig_district, division
 
 
+def render_markdown_tables(text):
+    """Simple regex-based markdown table to HTML converter."""
+    if "|" not in text or "---" not in text:
+        return html_module.escape(text).replace("\n", "<br>")
+        
+    lines = text.strip().split("\n")
+    html = ""
+    table_started = False
+    
+    current_text_block = []
+    
+    for line in lines:
+        if "|" in line:
+            if not table_started:
+                if current_text_block:
+                    html += html_module.escape("\n".join(current_text_block)).replace("\n", "<br>")
+                    current_text_block = []
+                html += "<table>"
+                table_started = True
+            cells = [c.strip() for c in line.split("|") if c.strip() or line.strip().startswith("|")]
+            if len(cells) == 0: continue
+            if "---" in line: continue
+            row_tag = "th" if html.endswith("<table>") else "td"
+            html += "<tr>"
+            for cell in cells:
+                html += f"<{row_tag}>{html_module.escape(cell)}</{row_tag}>"
+            html += "</tr>"
+        else:
+            if table_started:
+                html += "</table>"
+                table_started = False
+            current_text_block.append(line)
+            
+    if table_started: html += "</table>"
+    if current_text_block: html += html_module.escape("\n".join(current_text_block)).replace("\n", "<br>")
+    return html
+
 def build_incident_html(inc):
-    """
-    Format incidents EXACTLY as shown in the sample Security Situation Report.
-    
-    Sample format:
-    DIG Ratnapura          EMBILIPITIYA: (Arrest of suspects along with a detonator and
-    District               gunpowder) On the 17th March 2026, acting on an information...
-    
-    Embilipitiya Div.
-    """
+    """Format incidents EXACTLY as shown in the sample Security Situation Report."""
     station_raw = str(inc.get("station", "")).strip()
-    
-    # Clean station name - remove "POLICE STATION" suffix
     station = re.sub(r'\s*(?:POLICE\s*)?STATION\s*$', '', station_raw, flags=re.IGNORECASE)
     station = station.strip().upper()
     
-    # Get incident title/summary (in parentheses)
     summary = str(inc.get("summary", "")).strip()
-    
-    # Get body text
     body = str(inc.get("body", "")).strip()
-    
-    # Get hierarchy
     hierarchy = inc.get("hierarchy", "")
     dig_district, division = extract_hierarchy(hierarchy)
-    
-    # Get reference code
     ref = str(inc.get("ctm", inc.get("otm", inc.get("ir", "")))).strip()
     
-    # Build the left column (DIG side)
     dig_html = ""
     if dig_district:
-        dig_html += f'<div class="dig-district">{dig_district}</div>'
+        dig_html += f'<div class="dig-district"><b>{html_module.escape(dig_district)}</b></div>'
     if division:
-        dig_html += f'<div class="dig-division">{division}</div>'
+        dig_html += f'<div class="dig-division"><b>{html_module.escape(division)}</b></div>'
     
-    # Build the right column (body side)
-    # Format: STATION: (Title) Body text (REF)-X
-    body_html = f'<span class="station-name">{station}:</span> '
+    body_html = f'<span class="station-name"><b>{html_module.escape(station)}:</b></span> '
+    # Only show summary in parentheses if it's a genuine crime-type label,
+    # NOT a truncated version of the body text (which causes ugly duplication)
+    if summary and len(summary) < 80 and not body.startswith(summary[:40]):
+        body_html = f'<span class="station-name"><b>{html_module.escape(station)}: ({html_module.escape(summary)})</b></span> '
     
-    if summary:
-        body_html += f'<span class="incident-title">({summary})</span> '
+    formatted_body = render_markdown_tables(body)
+    body_html += formatted_body
     
-    body_html += body
-    
-    if ref:
-        body_html += f' ({ref})'
+    if ref and ref not in formatted_body:
+        body_html += f' <b>({html_module.escape(ref)})</b>'
     
     return (
         f'<div class="incident-block">'
@@ -311,7 +143,7 @@ def build_section_html(sec):
     has_any_incidents = any(p.get("incidents") for p in provinces)
     
     # Section header with "Nil" if empty (Security Report format: same line)
-    if not has_any_incidents and not any(p.get("nil") for p in provinces):
+    if not has_any_incidents:
         return f'<div class="section-header">{title} Nil</div>'
     
     html = f'<div class="section-header">{title}</div>'
@@ -326,76 +158,16 @@ def build_section_html(sec):
         if "PROVINCE" not in province_name:
             province_name += " PROVINCE"
         
+        if is_nil or not incs:
+            continue # Skip rendering this province completely
+            
         html += f'<div class="province-heading">S/DIG  {province_name}</div>'
         
-        if is_nil or not incs:
-            # Security Report: Show "Nil" on same line as province heading
-            html += '<div class="section-header" style="margin-left:0;">Nil</div>'
-        else:
-            # Add each incident
-            for i in incs:
-                html += build_incident_html(i)
+        # Add each incident
+        for i in incs:
+            html += build_incident_html(i)
     
     return html
-
-
-def get_official_appendices(report_date="18th March 2026"):
-    """Official Signature and Distribution List - EXACT format from sample."""
-    
-    # Signature section with handwritten signature placeholder
-    sig_html = f"""
-    <div class="sig-section">
-        <div class="section-header">04. OTHER MATTERS OF INTEREST AND IMPORTANCE: Nil</div>
-        <div style="text-decoration: underline; margin-top: 5mm; margin-bottom: 3mm;">
-            <span style="font-style: italic;">Signature placeholder</span>
-        </div>
-        <div class="sig-prepared">
-            Prepared by: PS 51258<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;U.G. Ajith Priyantha
-        </div>
-        <div style="text-align: center; margin-top: 10mm;">
-            <div style="text-decoration: underline; display: inline-block; margin-bottom: 3mm;">
-                <span style="font-style: italic;">Signature placeholder</span>
-            </div>
-        </div>
-        <div class="sig-checked">
-            Checked by: B.A. Sujith Ganganatha<br>
-            Chief Inspector of Police<br>
-            Duty Officer<br>
-            IG's Command & Information Division,<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Mirihana<br>
-            {report_date}
-        </div>
-    </div>"""
-    
-    # Distribution list - EXACT format from sample
-    dist_items = [
-        ("(i)", "H.E. the President"),
-        ("(ii)", "Hon. Prime Minister"),
-        ("(iii)", "Hon. Speaker"),
-        ("(iv)", "Hon. Minister of Public Security"),
-        ("(v)", "Secretary to H.E the President"),
-        ("(vi)", "Secretary to Hon. Prime Minister"),
-        ("(vii)", "Secretary to the Cabinet"),
-        ("(viii)", "Secretary to the Ministry of Defence"),
-        ("(ix)", "Secretary to the Ministry of Public Security"),
-        ("(x)", "Advisor to Hon. Minister of Public Security"),
-        ("(xi)", "Chairman / Secretary to National Police Commission"),
-        ("(xii)", "Chief of Defence Staff"),
-        ("(xiii)", "Service Commanders"),
-        ("(xiv)", "SDIGG"),
-        ("(xv)", "DIGG"),
-        ("(xvi)", "Directors"),
-        ("(xvii)", "All SSP / SP Divisions (Territorial)"),
-        ("(xviii)", "All HQII & OICC (Territorial & Functional) and File")
-    ]
-    
-    dist_html = '<div class="distribution"><div class="dist-title">Copies to:</div>'
-    for num, name in dist_items:
-        dist_html += f'<div class="dist-item">{num:>6} {name}</div>'
-    dist_html += '</div>'
-    
-    return sig_html + dist_html
 
 
 def generate_security_report(data, output_path):
@@ -412,37 +184,38 @@ def generate_security_report(data, output_path):
     for sec in data.get("sections", []):
         content_html += build_section_html(sec)
     
-    # Get date range from data
-    date_range = data.get("date_range", "From 0400 hrs. on 17th March 2026 to 0400 hrs. on 18th March 2026")
+    date_range = format_date_range_for_header(
+        data.get("date_range", "From 0400 hrs. on 17th March 2026 to 0400 hrs. on 18th March 2026")
+    )
+    report_date = signature_report_date_string()
+    sig_section, dist_section = get_official_appendices(report_date=report_date)
     
-    # Format date range with superscript for "th"
-    date_range = re.sub(r'(\d+)(st|nd|rd|th)', r'\1<sup>\2</sup>', date_range)
+    # Build pages
+    pages = []
     
-    # Get report date for signature
-    today = datetime.now()
-    day = today.day
-    if 10 <= day % 100 <= 20:
-        suffix = 'th'
-    else:
-        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
-    report_date = f"{day}{suffix} {today.strftime('%B %Y')}"
+    # Page 1: Header + Content (properly build header from HEADER_TEMPLATE)
+    header_html = build_report_header(logo_path, date_range, "Security Situation Report")
     
-    # Get official appendices (signature and distribution)
-    appendices = get_official_appendices(report_date=report_date)
+    page1_content = header_html + content_html
+    page1 = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "1")
+    page1 = page1.replace("{{ CONTENT }}", page1_content)
+    pages.append(page1)
     
-    # Assemble page
-    page = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "1")
-    page = page.replace("{{ LOGO_PATH }}", logo_path)
-    page = page.replace("{{ DATE_RANGE }}", date_range)
-    page = page.replace("{{ CONTENT }}", content_html)
-    page = page.replace("{{ APPENDICES }}", appendices)
+    # Page 2: Signature
+    page_sig = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "2")
+    page_sig = page_sig.replace("{{ CONTENT }}", sig_section)
+    pages.append(page_sig)
     
-    # Assemble full HTML
-    full_html = HTML_TEMPLATE.replace("{{ ALL_PAGES }}", page)
+    # Page 3: Distribution
+    page_dist = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "3")
+    page_dist = page_dist.replace("{{ CONTENT }}", dist_section)
+    pages.append(page_dist)
     
-    # Clean any Sinhala characters or artifacts
-    full_html = re.sub(r'[\u0D80-\u0DFF]+', '', full_html)
-    full_html = full_html.replace(""", '"').replace(""", '"').replace("„", '"')
+    # Assemble full HTML (same shell + CSS as General report)
+    all_pages = "".join(pages)
+    full_html = sanitize_html_for_pdf(
+        build_institutional_html_document("Security Situation Report", all_pages)
+    )
     
     # Write to file
     with open(output_path, "w", encoding="utf-8") as f:
@@ -452,34 +225,56 @@ def generate_security_report(data, output_path):
     return output_path
 
 
-def html_to_pdf(html_path, pdf_path):
-    """Convert HTML to PDF using Microsoft Edge."""
-    import subprocess
+def generate_general_report(data, output_path):
+    """Generate General Situation Report with 29-category summary table."""
+    logo_filename = "police_logo.png"
+    logo_path = "file:///" + os.path.abspath(logo_filename).replace("\\", "/")
     
-    edge_exe = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-    if not os.path.exists(edge_exe):
-        edge_exe = r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"
+    # 1. Body content
+    content_html = ""
+    for sec in data.get("sections", []):
+        content_html += build_section_html(sec)
     
-    if not os.path.exists(edge_exe):
-        print("❌ Microsoft Edge not found")
-        return False
+    # 2. Summary Table (9x9)
+    summary_data = data.get("summary_table", [])
+    summary_table_html = '<div style="text-align:center; font-weight:bold; font-size:14pt; margin-bottom:5mm;">SUMMARY</div>'
+    summary_table_html += '<table class="prov-summary-table"><tr><th style="width:30%;"></th>'
+    cols = ["Theft", "HB & Theft", "Robberies", "Rape", "Homicide", "Police Acc.", "Fatal Acc.", "Others", "Total"]
+    for col in cols:
+        summary_table_html += f'<th class="header-rotated"><div>{col}</div></th>'
+    summary_table_html += '</tr>'
     
-    cmd = [
-        edge_exe,
-        "--headless",
-        "--disable-gpu",
-        f"--print-to-pdf={os.path.abspath(pdf_path)}",
-        "--no-pdf-header-footer",
-        f"file:///{os.path.abspath(html_path)}"
-    ]
+    provinces = ["Western", "Sabaragamuwa", "Southern", "Uva", "Central", "North Western", "North Central", "Eastern", "Northern"]
+    for prov in provinces:
+        summary_table_html += f'<tr><td style="text-align:left; font-weight:bold; padding-left:8px;">{prov} Province</td>'
+        for _ in range(9): summary_table_html += '<td>-</td>'
+        summary_table_html += '</tr>'
+    summary_table_html += '</table>'
+
+    date_range = format_date_range_for_header(
+        data.get("date_range", "From 0400 hrs. on 17th March 2026 to 0400 hrs. on 18th March 2026")
+    )
+    report_date = signature_report_date_string()
+    sig_section, dist_section = get_official_appendices(report_date=report_date)
+
+    # Assemble Pages
+    header_html = build_report_header(logo_path, date_range, "General Situation Report")
     
-    try:
-        subprocess.run(cmd, check=True, timeout=60)
-        print(f"✅ PDF generated: {pdf_path}")
-        return True
-    except Exception as e:
-        print(f"❌ PDF conversion failed: {e}")
-        return False
+    pages = []
+    p1 = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "1").replace("{{ CONTENT }}", header_html + content_html)
+    p2 = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "2").replace("{{ CONTENT }}", summary_table_html)
+    p3 = PAGE_TEMPLATE.replace("{{ PAGE_NUM }}", "3").replace("{{ CONTENT }}", sig_section + dist_section)
+    
+    pages.extend([p1, p2, p3])
+    full_html = sanitize_html_for_pdf(
+        build_institutional_html_document("General Situation Report", "".join(pages))
+    )
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(full_html)
+    
+    print(f"✅ General Report generated: {output_path}")
+    return output_path
 
 
 if __name__ == "__main__":

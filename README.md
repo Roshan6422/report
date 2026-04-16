@@ -16,7 +16,7 @@ This system automates the processing of Sri Lanka Police daily incident reports 
 ✅ **Multi-AI Support** - OpenRouter, DeepSeek, Claude, Gemini with auto-fallback  
 ✅ **Official Formatting** - Generates HTML/PDF with institutional headers and signatures  
 ✅ **Batch Processing** - Process multiple PDFs automatically  
-✅ **Web Interface** - Auto mode + Manual translation workspace  
+✅ **Desktop HUD** - Unified side-by-side workspace with ChatGPT & Gemini Integration  
 ✅ **Quality Scoring** - Confidence scoring (0.0-1.0) for extracted incidents  
 ✅ **Analytics** - Auto-generates case data tables and summary matrices  
 
@@ -53,7 +53,16 @@ Open browser: `http://localhost:3000`
 - Upload PDF → Click "Start DeepSea Automatic Engine"
 - Or use Manual Workspace for ChatGPT-assisted translation
 
-**Option B: Command Line**
+**Option B: Desktop HUD (Manual Mode)**
+
+```bash
+python unified_manual_assistant.py
+```
+- Real-time side-by-side processing
+- Integrated Gemini Vision OCR
+- One-click clipboard syncing
+
+**Option C: Command Line**
 
 ```bash
 # Single PDF (Regex only - fast)
@@ -144,6 +153,7 @@ python batch_processor.py --input uploads --ai
 ├── web_report_engine.py        # HTML/PDF generation
 ├── pipeline_utils.py           # Enhancement utilities
 ├── analytics_engine.py         # Statistics calculator
+├── unified_manual_assistant.py # Unified Manual Desktop HUD
 ├── sinhala_section_splitter.py # Section categorizer
 ├── markdown_parser.py          # Markdown processor
 ├── patterns.py                 # Regex patterns

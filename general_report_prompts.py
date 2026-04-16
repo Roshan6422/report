@@ -1,79 +1,39 @@
 """
-General Report Writing Prompts
-Professional prompts for generating detailed General Situation Report narratives
+general_report_prompts.py
+System and User prompts for high-fidelity English extraction from Sri Lanka Police reports.
 """
 
-GENERAL_REPORT_SYSTEM_PROMPT = """You are a professional Sri Lankan Police report writer specializing in General Situation Reports.
+GENERAL_REPORT_SYSTEM_PROMPT = """
+You are a Senior Data Architect at the Sri Lanka Police Information Technology Division. 
+Your task is to extract and translate medical/criminal reports into a precise, institutional JSON structure.
 
-Your task is to write detailed, professional incident narratives following the EXACT format used in official General Situation Reports.
+### RULES:
+1.  **Language**: All output must be in professional English.
+2.  **Output Format**: Return ONLY a JSON object. No markdown fences.
+3.  **Strict Structure**:
+    - "station": Canonical police station name (e.g. "KOLLUPITIYA").
+    - "date": Date of incident (format: "20th of March 2026").
+    - "time": Time of incident (format: "0400 hrs").
+    - "description": Contextual body of the incident.
+    - "financial_loss": Value in LKR or "Nil".
+    - "victim_suspect_names": Names of people involved or "N/A".
+    - "status": "Confirmed", "Under Investigation", etc.
+4.  **No Placeholders**: If a field is missing, use "N/A" or "Nil".
+"""
 
-CRITICAL REQUIREMENTS:
-1. Write 150-250 words per incident
-2. Include ALL specific details: amounts, quantities, times, dates, locations, names
-3. Use professional police terminology
-4. Follow the exact structure shown in samples
-5. Include complainant name and telephone number
-6. State recovery status explicitly
-7. Always include motive statement
-8. Use "hrs" for time (not "hours")
-9. Use ordinal suffixes for dates (14th, 16th, not 14, 16)
-10. Use Rs. symbol for currency amounts
-11. Use fractions for gold quantities (01 ¾ sovereigns)
+GENERAL_REPORT_USER_PROMPT = """
+Convert the following Sinhala police incident report into the requested institutional format.
 
-FORMAT STRUCTURE:
-[Station Name]: ([Brief summary]) [Detailed narrative with all specifics: amounts, 
-times, dates, locations, complainant details, suspect information, recovery status, 
-motive]. ([Reference Code])
+INCIDENT TEXT:
+{incident_text}
 
-You must write in clear, professional English suitable for official police reports."""
+JSON RESULT:
+"""
 
-GENERAL_REPORT_USER_PROMPT = """Write a detailed General Situation Report narrative for this incident.
+def create_general_report_prompt(incident_text: str) -> str:
+    return GENERAL_REPORT_USER_PROMPT.format(incident_text=incident_text)
 
-INCIDENT DATA:
-{incident_data}
-
-REQUIREMENTS:
-- Write 150-250 words
-- Include ALL details: exact amounts (Rs. X), quantities (X sovereigns), times (XXXX hrs), dates (Xth of Month Year)
-- Include complete location with area names
-- Include complainant name and telephone number in format: (TP XXX-XXXXXXX)
-- Include suspect information (name/age/address or "Unknown")
-- State recovery status: "The stolen [items] not recovered and investigations in process" OR "recovered"
-- Include motive: "Motive: For illegal gain" or appropriate motive
-- Use professional police terminology
-- End with reference code in parentheses
-
-SAMPLE FORMAT:
-PUSSELLAWA: (A case of a burglary of Rs. 150,000/= and gold jewellery) A case of a burglary of Rs. 150,000/= and gold jewellery (01 ¾ sovereigns) valued Rs. 600,000/= by breaking and entering through a window of a house was reported to the police station. The offence took place between 0900 hrs on 14th of March 2026 and 1400 hrs on 16th of March 2026 at Mawelakanda, Maswela. Complainant named H. S. Kandegedara, (TP 072-5340753). Suspect: Unknown. The stolen cash and jewellery not recovered and investigations in process. Motive: For illegal gain. (CTM.522)
-
-Write the narrative now:"""
-
-
-def create_general_report_prompt(incident_data):
-    """Create a prompt for General Report narrative generation."""
-    return GENERAL_REPORT_USER_PROMPT.format(incident_data=incident_data)
-
-
-# Example usage
+# Example usage for testing
 if __name__ == "__main__":
-    sample_incident = """
-    Station: Pussellawa
-    Type: Burglary
-    Stolen: Rs. 150,000 cash, gold jewellery 1.75 sovereigns worth Rs. 600,000
-    Method: Breaking and entering through window
-    Time: Between 0900 hrs on 14 March 2026 and 1400 hrs on 16 March 2026
-    Location: Mawelakanda, Maswela
-    Complainant: H. S. Kandegedara, phone 072-5340753
-    Suspect: Unknown
-    Recovery: Not recovered
-    Reference: CTM.522
-    """
-    
-    prompt = create_general_report_prompt(sample_incident)
-    print("SYSTEM PROMPT:")
-    print("=" * 80)
-    print(GENERAL_REPORT_SYSTEM_PROMPT)
-    print("\n" + "=" * 80)
-    print("\nUSER PROMPT:")
-    print("=" * 80)
-    print(prompt)
+    sample_incident = "2026.03.20 වන දින පැය 0510 ට කොල්ලුපිටිය පොලිස් ස්ථානයට ලැබුණු පැමිණිල්ල..."
+    print(create_general_report_prompt(sample_incident))

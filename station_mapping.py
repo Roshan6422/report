@@ -529,6 +529,21 @@ SINHALA_TO_ENGLISH = {
     "රහතුඩුව": "Kahataduwa", "රහතුඩුල": "Kahataduwa",
     "හොරොක්පොතාන": "Horokkopotana", "කම්බුක්කන": "Kambukkan",
     "බුත්තල": "Buttala",
+    # Additional Mappings from police_geo_utils
+    "අගලවත්ත": "AGALAWATTA", "අත්ත‍නගල්ල": "ATTANAGALLA", "අඹන්පොළ": "AMBANPOLA",
+    "අළුත්ගම": "ALUTHGAMA", "එඹිලිපිටිය": "EMBILIPITIYA", "එල්පිටිය": "ELPITIYA",
+    "ඒකල": "EKALA", "කටුනායක": "KATUNAYAKE", "කන්නිය": "KINNIYA", "කල්මුණේ": "KALMUNAI",
+    "කිරුළ‍ාපොන": "KIRULAPONE", "කිලිනොච්චි": "KILINOCHCHI", "කුළියාපිටිය": "KULIYAPITIYA",
+    "කේකිරාව": "KEKIRAWA", "කේලණිය": "KELANIYA", "කේස්බෑව": "KESBEWA",
+    "කොලොන්නාව": "KOLONNAWA", "කොළඹ මහ": "FORT", "ක‍ටාන": "KATANA", "ක‍ළුතර": "KALUTARA",
+    "ගනේමුල්ල": "GANEMULLA", "ග‍ැ‍ම්පහ": "GAMPAHA", "චිලාව": "CHILAW", "ජා‍ ඇල": "JA-ELA",
+    "ත්‍රිකුණාමල": "TRINCOMALEE", "තිස්සමහාරාම": "TISSAMAHARAMA", "නිට්ටඹුව": "NITTAMBUWA",
+    "පන්නිපිටිය": "PANNIPITIYA", "පිළියන්ද‍ල": "PILIYANDALA", "පිළිසස්": "PETTAH",
+    "පේලියගොඩ": "PELIYAGODA", "බුළත්සිංහල": "BULATHSINHALA", "මාතුගම": "MATHUGAMA",
+    "මාළාබේ": "MALABE", "මූලතිව්": "MULLAITIVU", "මේදවච්චිය": "MEDAWACHCHIYA",
+    "රත්මලාන": "RATMALANA", "වව්නියා": "VAVUNIYA", "වේයන්ගොඩ": "VEYANGODA",
+    "වේලිගම": "WELIGAMA", "ශ්‍රී ජයවර්ධනපුර": "SRI JAYAWARDENEPURA", "සීගිරිය": "SIGIRIYA",
+    "සීදුව": "SEEDUWA", "හාපුතලේ": "HAPUTALE", "හේදල": "HENDALA",
 }
 
 # Province display order (matches official IG's Command format)
@@ -545,29 +560,75 @@ PROVINCE_ORDER = [
     "UVA PROVINCE",
 ]
 
+
+def get_institutional_prompt_snippet():
+    """Returns a formatted string of the current Sinhala-to-English mappings for AI prompt injection."""
+    snippet = "SRI LANKA POLICE INSTITUTIONAL TERMINOLOGY (Official Mappings):\n"
+    # Select a relevant subset or full list depending on prompt size constraints
+    # For now, let's include the full Sinhala_to_English mapping but limit counts to avoid bloat
+    for sin, eng in list(SINHALA_TO_ENGLISH.items())[:300]: 
+        snippet += f"- {sin} -> {eng}\n"
+    return snippet
+
+
+def enforce_terminology(text):
+    """Enforce standard English station names via regex and phonetic alias mapping."""
+    if not text: return text
+    processed = text
+    
+    # 1. Handle common phonetic mismatches that AI often makes
+    PHONETIC_ALIASE_MAP = {
+        "Meegamuwa": "NEGOMBO",
+        "Halawatha": "CHILAW",
+        "Halawata": "CHILAW",
+        "Mahanuwara": "KANDY",
+        "Madakalapuwa": "BATTICALOA",
+        "Yapanaya": "JAFFNA",
+        "Trincomalee": "TRINCOMALEE", 
+    }
+    
+    for phonetic, official in PHONETIC_ALIASE_MAP.items():
+        pattern = re.compile(re.escape(phonetic), re.IGNORECASE)
+        processed = pattern.sub(official, processed)
+
+    # 2. Perform Case-Insensitive replacements for all standard English names in the map
+    # We use word boundaries \b to avoid partial matches
+    for sin, eng in SINHALA_TO_ENGLISH.items():
+        if not eng or len(eng) < 3: continue
+        pattern = re.compile(r'\b' + re.escape(eng) + r'\b', re.IGNORECASE)
+        processed = pattern.sub(eng.upper(), processed)
+        
+    return processed
+
+
 import difflib
 import re
 
 def get_station_info(station_name):
     """Look up station info, return dict or default."""
+    if not station_name or str(station_name).lower() == "unknown":
+        return {"province": "UNKNOWN DISTRICT", "dig": "UNKNOWN DIG", "div": "UNKNOWN Div."}
+
     info = STATION_MAP.get(station_name)
     if info:
         return info
         
     # Standardize input for fuzzy matching
-    st_clean = re.sub(r'(?i)\b(?:Special Investigation Unit|North|South|East|West|Central|HQ|Post)\b', '', station_name)
+    st_clean = re.sub(r'(?i)\b(?:Special Investigation Unit|North|South|East|West|Central|HQ|Post|Police|Station)\b', '', str(station_name))
     st_clean = re.sub(r'[,.\s]+', ' ', st_clean).strip()
         
-    # Try exact substring match first
+    # Try exact substring match first (most reliable)
     for key in STATION_MAP:
-        if key.lower() in station_name.lower() or station_name.lower() in key.lower():
+        if key.lower() in str(station_name).lower() or str(station_name).lower() in key.lower():
             return STATION_MAP[key]
             
-    # Try fuzzy match (resolves spelling errors like Ambalipitiya -> Embilipitiya)
+    # Try fuzzy match (resolves spelling errors like Ambalipitiya -> Embilipitiya / Ambalantota)
     if st_clean:
-        matches = difflib.get_close_matches(st_clean, STATION_MAP.keys(), n=1, cutoff=0.6)
+        # Increase n=3 to allow more candidates and check closely
+        matches = difflib.get_close_matches(st_clean, STATION_MAP.keys(), n=3, cutoff=0.55)
         if matches:
+            # Pick the best match but only if it's statistically significant
             return STATION_MAP[matches[0]]
             
-    # Default Fallback
-    return {"province": "WESTERN PROVINCE", "dig": f"DIG {station_name}", "div": f"{station_name} Div."}
+    # Default Fallback (Institutional: Do not guess Western Province if unknown)
+    return {"province": "UNKNOWN DISTRICT", "dig": f"DIG {station_name}", "div": f"{station_name} Div."}

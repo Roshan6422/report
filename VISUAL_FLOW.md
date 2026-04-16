@@ -1,0 +1,190 @@
+# 🔄 Round-Robin Visual Flow
+
+## මුළු Process එකේ Engine Usage
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PDF UPLOAD (User Action)                      │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 1: EXTRACTION (Round-Robin Fallback Chain)               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Try 1: Gemini Vision ────────────► Success? ──► Continue       │
+│           │                              │                       │
+│           │ Fail                         │                       │
+│           ▼                              │                       │
+│  Try 2: GitHub Models ────────────► Success? ──► Continue       │
+│           │                              │                       │
+│           │ Fail                         │                       │
+│           ▼                              │                       │
+│  Try 3: OpenRouter ───────────────► Success? ──► Continue       │
+│           │                              │                       │
+│           │ Fail                         │                       │
+│           ▼                              │                       │
+│  Try 4: Ollama Model 1 ────────────► Success? ──► Continue      │
+│           │                              │                       │
+│           │ Fail                         │                       │
+│           ▼                              │                       │
+│  Try 5: Ollama Model 2 ────────────► Success? ──► Continue      │
+│           │                              │                       │
+│           │ Fail                         │                       │
+│           ▼                              │                       │
+│  Try N: Ollama Model N ────────────► Success? ──► Continue      │
+│           │                              │                       │
+│           │ All Failed                   │                       │
+│           ▼                              │                       │
+│        ❌ ERROR                          │                       │
+│                                          │                       │
+└──────────────────────────────────────────┼───────────────────────┘
+                                           │
+                                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 2: TRANSLATION (Parallel Round-Robin Distribution)       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  29 Categories processed in parallel (8 workers)                │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ Category 01  │  │ Category 02  │  │ Category 03  │          │
+│  │   Batch 1    │  │   Batch 1    │  │   Batch 1    │          │
+│  │      ↓       │  │      ↓       │  │      ↓       │          │
+│  │ Ollama:llama3│  │ Ollama:gemma │  │ Ollama:qwen  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ Category 04  │  │ Category 05  │  │ Category 06  │          │
+│  │   Batch 1    │  │   Batch 1    │  │   Batch 1    │          │
+│  │      ↓       │  │      ↓       │  │      ↓       │          │
+│  │    GitHub    │  │    Gemini    │  │  OpenRouter  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ Category 07  │  │ Category 08  │  │ Category 09  │          │
+│  │   Batch 1    │  │   Batch 1    │  │   Batch 1    │          │
+│  │      ↓       │  │      ↓       │  │      ↓       │          │
+│  │ Ollama:llama3│  │ Ollama:gemma │  │ Ollama:qwen  │          │
+│  │  (rotation   │  │  (rotation   │  │  (rotation   │          │
+│  │   restart)   │  │  continues)  │  │  continues)  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                                                                  │
+│  ... (continues for all 29 categories)                          │
+│                                                                  │
+│  Each batch within a category also rotates:                     │
+│  Cat 01, Batch 1 → Engine A                                     │
+│  Cat 01, Batch 2 → Engine B                                     │
+│  Cat 01, Batch 3 → Engine C                                     │
+│                                                                  │
+└──────────────────────────────────────────┬───────────────────────┘
+                                           │
+                                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 3: PDF GENERATION (Single Thread)                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  General Report  ──► HTML ──► PDF                               │
+│  Security Report ──► HTML ──► PDF                               │
+│                                                                  │
+└──────────────────────────────────────────┬───────────────────────┘
+                                           │
+                                           ▼
+                                    ✅ COMPLETE!
+```
+
+---
+
+## Load Distribution Example
+
+### Without Round-Robin (Old System):
+```
+┌─────────────────┐
+│  Ollama Model   │ ◄─── ALL 100+ translations
+│   (OVERLOAD!)   │      ⚠️ Slow, crashes, timeouts
+└─────────────────┘
+```
+
+### With Round-Robin (New System):
+```
+┌─────────────────┐
+│ Ollama: llama3  │ ◄─── 20 translations
+└─────────────────┘
+
+┌─────────────────┐
+│ Ollama: gemma   │ ◄─── 20 translations
+└─────────────────┘
+
+┌─────────────────┐
+│ Ollama: qwen    │ ◄─── 20 translations
+└─────────────────┘
+
+┌─────────────────┐
+│ GitHub Models   │ ◄─── 20 translations
+└─────────────────┘
+
+┌─────────────────┐
+│     Gemini      │ ◄─── 20 translations
+└─────────────────┘
+
+✅ Balanced load, fast, stable!
+```
+
+---
+
+## Real-Time Rotation Formula
+
+```python
+# For each translation batch:
+shift = (category_number * 100 + batch_index) % total_engines
+selected_engine = engines[shift]
+
+# Example with 6 engines:
+Cat 01, Batch 0: (1*100 + 0) % 6 = 4 → Engine 4
+Cat 01, Batch 1: (1*100 + 1) % 6 = 5 → Engine 5
+Cat 02, Batch 0: (2*100 + 0) % 6 = 2 → Engine 2
+Cat 02, Batch 1: (2*100 + 1) % 6 = 3 → Engine 3
+```
+
+---
+
+## Circuit Breaker Protection
+
+```
+Engine fails once    → ⚠️  Warning logged
+Engine fails twice   → ⚠️  Warning logged
+Engine fails 3 times → 🔴 MARKED OFFLINE
+                        ↓
+                   Skipped in rotation
+                        ↓
+              "Reset AI Health" button
+                        ↓
+                   🟢 Back online
+```
+
+---
+
+## Check Your Status
+
+Run these commands:
+
+```bash
+# See all engines and rotation order
+python show_round_robin_status.py
+
+# Test rotation with real calls
+python test_round_robin.py
+
+# Run the UI
+python police_desktop_ui.py
+```
+
+---
+
+## Summary
+
+✅ **Stage 1 (Extraction):** Sequential fallback through all engines  
+✅ **Stage 2 (Translation):** Parallel distribution across all engines  
+✅ **Stage 3 (PDF Gen):** Single thread (fast HTML/PDF)  
+
+**Result:** Maximum speed, no crashes, balanced load! 🚀

@@ -22,16 +22,14 @@ class GeneralReportProcessor:
         # Create prompt
         user_prompt = create_general_report_prompt(incident_data)
         
-        # Get AI response
-        response = self.ai_manager.generate_text(
+        # Get AI response (call_ai returns a string; errors start with "❌")
+        response = self.ai_manager.call_ai(
             prompt=user_prompt,
             system_prompt=GENERAL_REPORT_SYSTEM_PROMPT,
-            max_tokens=500,
-            temperature=0.3
         )
         
-        if response["success"]:
-            narrative = response["text"].strip()
+        if response and not str(response).startswith("❌"):
+            narrative = str(response).strip()
             
             # Extract components
             station, summary, body, ref = self._parse_narrative(narrative)
@@ -46,7 +44,7 @@ class GeneralReportProcessor:
             }
         else:
             return {
-                "error": response.get("error", "Unknown error"),
+                "error": str(response) if response else "Unknown error",
                 "narrative": None
             }
     
@@ -83,7 +81,7 @@ class GeneralReportProcessor:
         print("=" * 80)
         
         for i, inc in enumerate(incidents, 1):
-            print(f"\n[{i}/{len(incidents)}] Processing: {inc.get('station', 'Unknown')}")
+            print(f"\n[{i}/{len(incidents)}] Processing: {inc.get('station')}")
             
             result = self.generate_detailed_narrative(inc)
             
@@ -105,65 +103,64 @@ class GeneralReportProcessor:
             "01. SERIOUS CRIMES COMMITTED:": [],
             "02. RAPE, SEXUAL ASSAULT & CHILD ABUSE:": [],
             "03. FATAL ACCIDENTS:": [],
-            "04. POLICE OFFICERS/VEHICLES INVOLVED IN ROAD ACCIDENTS AND DAMAGES TO SRI LANKA POLICE PROPERTY:": [],
+            "04. POLICE OFFICERS/VEHICLES INVOLVED IN ROAD ACCIDENTS AND DAMAGES TO SRI LANKA POLICE PROPERTY: ": [],
             "05. FINDING OF DEAD BODIES UNDER SUSPICIOUS CIRCUMSTANCES:": [],
-            "06. SERIOUS INJURY/ ILLNESSES/ DEATHS OF POLICE OFFICERS:": [],
-            "07. DETECT OF NARCOTIC AND ILLEGAL LIQUOR:": [],
-            "08. ARREST OF TRI-FORCES MEMBERS:": [],
-            "09. OTHER MATTERS:": [],
-            "10. [RESERVED]:": []
+            "06. POLICE OFFICERS CHARGED IN COURTS / COMPLAINTS AGAINST POLICE / ALLEGED ACTS OF INDISCIPLINE BY POLICE OFFICERS": [],
+            "07. SERIOUS INJURY/ ILLNESSES/ DEATHS OF POLICE OFFICERS:": [],
+            "08. DETECT OF NARCOTIC AND ILLEGAL LIQUOR:": [],
+            "09. ARREST OF TRI-FORCES MEMBERS:": [],
+            "10. OTHER MATTERS:": []
         }
         
         for inc in incidents:
             body_lower = inc.get("body", "").lower()
             summary_lower = inc.get("summary", "").lower()
             
-            # Check if it's an arrest with firearms/ammunition (goes to OTHER MATTERS)
-            is_arms_arrest = any(kw in body_lower or kw in summary_lower for kw in 
-                                ["arrest", "arrested"]) and any(kw in body_lower or kw in summary_lower for kw in 
-                                ["firearm", "shotgun", "weapon", "ammunition", "bullet"])
+            # Combine body and summary for keyword searching
+            text_to_search = body_lower + " " + summary_lower
             
-            # 09. OTHER MATTERS - Arms/ammunition arrests
-            if is_arms_arrest:
-                sections["09. OTHER MATTERS:"].append(inc)
-            
-            # 02. Rape, Sexual Assault & Child Abuse
-            elif any(kw in body_lower or kw in summary_lower for kw in 
+            # 01. SERIOUS CRIMES COMMITTED (Homicides, Robberies, House Breaking & Theft, Vehicle Thefts, Property Thefts)
+            if any(kw in text_to_search for kw in 
+                     ["homicide", "murder", "robbery", "house breaking", "vehicle theft", "property theft", "theft", "burglary", "stolen"]):
+                sections["01. SERIOUS CRIMES COMMITTED:"].append(inc)
+                
+            # 02. RAPE, SEXUAL ASSAULT & CHILD ABUSE (Rape & Sexual Abuse)
+            elif any(kw in text_to_search for kw in 
                    ["rape", "sexual assault", "sexual abuse", "child abuse", "molestation", "indecent"]):
                 sections["02. RAPE, SEXUAL ASSAULT & CHILD ABUSE:"].append(inc)
             
-            # 03. Fatal Accidents
-            elif "accident" in body_lower and "fatal" in body_lower:
+            # 03. FATAL ACCIDENTS (Fatal accidents)
+            elif ("accident" in text_to_search or "crash" in text_to_search) and ("fatal" in text_to_search or "dead" in text_to_search or "death" in text_to_search) and not any(kw in text_to_search for kw in ["police accident", "police vehicle", "damage to police"]):
                 sections["03. FATAL ACCIDENTS:"].append(inc)
             
-            # 04. Police Officers/Vehicles in Road Accidents & Damages
-            elif any(kw in body_lower for kw in ["police officer", "police vehicle", "police accident", "damage to police"]):
-                sections["04. POLICE OFFICERS/VEHICLES INVOLVED IN ROAD ACCIDENTS AND DAMAGES TO SRI LANKA POLICE PROPERTY:"].append(inc)
+            # 04. POLICE OFFICERS / VEHICLES ACCIDENTS & DAMAGES (Police Accidents, Serious injuries & damages to police property)
+            elif any(kw in text_to_search for kw in ["police accident", "police vehicle", "police property", "damage to police", "serious injury to police property", "damages to police"]):
+                sections["04. POLICE OFFICERS/VEHICLES INVOLVED IN ROAD ACCIDENTS AND DAMAGES TO SRI LANKA POLICE PROPERTY: "].append(inc)
             
-            # 05. Finding of Dead Bodies under Suspicious Circumstances
-            elif any(kw in body_lower for kw in ["dead body", "suspicious death", "unidentified body", "suspicious circumstances"]):
+            # 05. FINDING OF DEAD BODIES (SUSPICIOUS) (Unidentified dead bodies)
+            elif any(kw in text_to_search for kw in ["dead body", "unidentified body", "suspicious death", "corpse", "unidentified dead bodies"]):
                 sections["05. FINDING OF DEAD BODIES UNDER SUSPICIOUS CIRCUMSTANCES:"].append(inc)
             
-            # 06. Serious Injury/Illnesses/Deaths of Police Officers
-            elif any(kw in body_lower for kw in ["police officer injured", "police officer death", "police officer illness", "sgoo"]):
-                sections["06. SERIOUS INJURY/ ILLNESSES/ DEATHS OF POLICE OFFICERS:"].append(inc)
+            # 06. POLICE OFFICERS CHARGED / COMPLAINTS (Misconduct of police officers)
+            elif any(kw in text_to_search for kw in ["police misconduct", "complaint against police", "officer charged", "police charged", "misconduct of police officers"]):
+                sections["06. POLICE OFFICERS CHARGED IN COURTS / COMPLAINTS AGAINST POLICE / ALLEGED ACTS OF INDISCIPLINE BY POLICE OFFICERS"].append(inc)
             
-            # 07. Detect of Narcotic and Illegal Liquor
-            elif any(kw in body_lower for kw in ["narcotic", "drug", "heroin", "cocaine", "cannabis", "illegal liquor", "illicit liquor", "kasippu"]):
-                sections["07. DETECT OF NARCOTIC AND ILLEGAL LIQUOR:"].append(inc)
+            # 07. SERIOUS INJURY / ILLNESS / DEATHS OF POLICE OFFICERS (Serious injuries, Deaths of police officers, Hospital admissions)
+            elif any(kw in text_to_search for kw in ["police officer injured", "police officer death", "police officer illness", "hospital admission", "hospitalized police", "injury to police", "death of police officer"]):
+                # Ensure it doesn't just match generic police terms, but specific injury/death of police context
+                sections["07. SERIOUS INJURY/ ILLNESSES/ DEATHS OF POLICE OFFICERS:"].append(inc)
             
-            # 08. Arrest of Tri-forces Members
-            elif any(kw in body_lower for kw in ["tri-force", "army", "navy", "air force", "soldier", "military"]):
-                sections["08. ARREST OF TRI-FORCES MEMBERS:"].append(inc)
+            # 08. DETECT OF NARCOTIC & ILLEGAL LIQUOR (Detections)
+            elif any(kw in text_to_search for kw in ["narcotic", "drug", "heroin", "cocaine", "cannabis", "illegal liquor", "illicit liquor", "kasippu", "methamphetamine", "ice", "ganja", "detection"]):
+                sections["08. DETECT OF NARCOTIC AND ILLEGAL LIQUOR:"].append(inc)
             
-            # 01. Serious Crimes (homicide, theft, burglary, robbery - but NOT arms arrests)
-            elif any(kw in body_lower for kw in 
-                     ["homicide", "murder", "robbery", "theft", "burglary", "house breaking"]):
-                sections["01. SERIOUS CRIMES COMMITTED:"].append(inc)
+            # 09. ARREST OF TRI-FORCES MEMBERS (Arrests)
+            elif any(kw in text_to_search for kw in ["tri-force", "army", "navy", "air force", "soldier", "military", "tri-forces", "tri-forces members"]) and "arrest" in text_to_search:
+                sections["09. ARREST OF TRI-FORCES MEMBERS:"].append(inc)
             
-            # 09. Other Matters (default for anything else)
+            # 10. OTHER MATTERS (Protests & Strikes, Disappearances, Suicides, Incidents regarding foreigners, Others)
             else:
-                sections["09. OTHER MATTERS:"].append(inc)
+                sections["10. OTHER MATTERS:"].append(inc)
         
         return sections
     
@@ -249,7 +246,7 @@ class GeneralReportProcessor:
         
         return result
     
-    def generate_report(self, incidents, date_range, output_html, output_pdf=None):
+    def generate_report(self, incidents, date_range, output_html, output_pdf=None, table_counts=None):
         """Complete pipeline: categorize, organize, and generate report."""
         
         print("\n" + "=" * 80)
@@ -274,6 +271,9 @@ class GeneralReportProcessor:
             "date_range": date_range,
             "sections": sections
         }
+        
+        if table_counts is not None:
+            report_data["table_counts"] = table_counts
         
         # Generate HTML
         print("\n4. Generating HTML report...")

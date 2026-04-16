@@ -56,21 +56,27 @@ class SinhalaPoliceReportExtractor:
             "29": "වෙනත් විශේෂ සිදුවීම"
         }
     
-    def extract_from_pdf(self, pdf_path: str) -> str:
+    def extract_from_pdf(self, pdf_path: str, progress_callback=None) -> str:
         """
-        Extract text from PDF file
-        PDF ගොනුවෙන් පෙළ නිස්සාරණය කරන්න
+        Extract high-fidelity Sinhala text from PDF using Surya OCR
+        Surya OCR භාවිතයෙන් PDF ගොනුවෙන් ඉහළ නිරවද්‍යතාවයකින් යුත් සිංහල පෙළ නිස්සාරණය කරන්න
         """
-        text = ""
         try:
+            from local_ocr_tool import extract_text_from_pdf
+            pages = extract_text_from_pdf(pdf_path, progress_callback=progress_callback)
+            return "\n\n".join(pages)
+        except ImportError:
+            print("⚠️ local_ocr_tool not found. Falling back to basic extraction...")
+            text = ""
             with open(pdf_path, 'rb') as file:
+                import PyPDF2
                 pdf_reader = PyPDF2.PdfReader(file)
                 for page in pdf_reader.pages:
                     text += page.extract_text()
+            return text
         except Exception as e:
-            print(f"Error reading PDF: {e}")
+            print(f"❌ Extraction Error: {e}")
             return ""
-        return text
     
     def extract_header(self, text: str) -> Dict[str, Any]:
         """
@@ -104,8 +110,9 @@ class SinhalaPoliceReportExtractor:
         ප්‍රවර්ගයක සිදුවීම් නොමැති දැයි පරීක්ෂා කරන්න
         """
         # Pattern: 01. ත්‍රස්තවාදී ක්‍රියාකාරකම : නැත.
-        pattern = rf'{category_num}\.\s+[^\n]*:\s*නැත'
-        return bool(re.search(pattern, text))
+        # Robust pattern matching the improved English parser
+        pattern = rf'(?:^|\n)[ \t*#-]*(?:Serial\s*No\.?\s*)?{category_num}[\.)\*]*[ \t]+[^\n]*?(:?\s*(?:නැත|Nil|None))'
+        return bool(re.search(pattern, text, re.IGNORECASE))
     
     def extract_category_count(self, text: str, category_num: str) -> Any:
         """
@@ -117,8 +124,9 @@ class SinhalaPoliceReportExtractor:
             return "නැත"
         
         # Pattern: 02. අවි ආයුධ සොයා ගැනීම (පුපුරණ ද්‍රව්‍ය / උණ්ඩ) :- 09
-        count_pattern = rf'{category_num}\.\s+[^\n]*:-\s*(\d+)'
-        match = re.search(count_pattern, text)
+        # Robust pattern to handle Serial No, markdown bolding, etc.
+        count_pattern = rf'(?:^|\n)[ \t*#-]*(?:Serial\s*No\.?\s*)?{category_num}[\.)\*]*[ \t]+[^\n]+?(?:[:-]\s*|Reported\s*:?\s*)(\d+)'
+        match = re.search(count_pattern, text, re.IGNORECASE)
         
         if match:
             return int(match.group(1))
@@ -132,18 +140,33 @@ class SinhalaPoliceReportExtractor:
         """
         incidents = []
         
-        # Find the category section
-        cat_pattern = rf'{category_num}\.\s+.*?(?=\d{{2}}\.|$)'
-        cat_match = re.search(cat_pattern, text, re.DOTALL)
+        # Find the category section using robust header pattern
+        header_pattern = rf'(?:^|\n)[ \t*#-]*(?:Serial\s*No\.?\s*)?{category_num}[\.)\*]*\s+'
+        cat_match = re.search(header_pattern, text, re.IGNORECASE)
         
         if not cat_match:
             return incidents
+
+        start_pos = cat_match.start()
+        # Find the next category header or end of file
+        next_cat_pattern = r'(?:\n|^)[ \t*#-]*(?:Serial\s*No\.?\s*)?\d{2}[\.)\*]*\s+'
+        next_cat_match = re.search(next_cat_pattern, text[cat_match.end():], re.IGNORECASE)
         
-        category_text = cat_match.group(0)
+        if next_cat_match:
+            category_text = text[start_pos : cat_match.end() + next_cat_match.start()]
+        else:
+            category_text = text[start_pos:]
+        
+        # Table rows live below the category title line; including the title makes
+        # "02. Category name..." match as a false first row for category 02.
+        # Header match may start with a leading newline — do not treat that as "line 1".
+        _hdr = category_text.lstrip("\n\r")
+        _end = _hdr.find("\n")
+        category_body = _hdr[_end + 1 :] if _end != -1 else ""
         
         # Extract table rows (numbered 1., 2., 3., etc.)
         row_pattern = r'(\d+)\.\s+(.*?)(?=\d+\.\s+|$)'
-        rows = re.finditer(row_pattern, category_text, re.DOTALL)
+        rows = re.finditer(row_pattern, category_body, re.DOTALL)
         
         for row in rows:
             row_num = row.group(1)
@@ -317,6 +340,13 @@ class SinhalaPoliceReportExtractor:
         if not pdf_text:
             return {"error": "Failed to extract text from PDF"}
         
+        return self.extract_all_from_text(pdf_text)
+
+    def extract_all_from_text(self, pdf_text: str) -> Dict[str, Any]:
+        """
+        Extract all data from raw report text
+        පෙළ වාර්තාවෙන් සියලුම දත්ත නිස්සාරණය කරන්න
+        """
         # Initialize report data structure
         report_data = {
             "header": self.extract_header(pdf_text),
@@ -426,10 +456,11 @@ def main():
     ප්‍රධාන ශ්‍රිතය - විධාන රේඛා අතුරුමුහුණත
     """
     import sys
+    import os
     
     print("=" * 80)
-    print("Sinhala Police Report Data Extraction Tool")
-    print("සිංහල පොලිස් වාර්තා දත්ත නිස්සාරණ මෙවලම")
+    print("Sinhala Police Report Data Extraction & Report Generation Tool")
+    print("සිංහල පොලිස් වාර්තා නිස්සාරණය සහ ඉංග්‍රීසි වාර්තා උත්පාදන මෙවලම")
     print("=" * 80)
     print()
     
@@ -450,26 +481,51 @@ def main():
     print(f"📝 Output Summary: {output_summary}")
     print()
     
-    # Create extractor
+    # 1. 100% LOCAL HIGH-FIDELITY EXTRACTION (Surya + Regex)
+    print("=" * 80)
+    print("🚀 Running 100% Local Master Pipeline (Surya AI + Regex)...")
+    print("🚀 100% දේශීය ප්‍රධාන ක්‍රියාවලිය ක්‍රියාත්මක කරමින් (Surya AI + Regex)...")
+    print("=" * 80)
+    
     extractor = SinhalaPoliceReportExtractor()
     
-    # Extract data
-    print("🔄 Extracting data from PDF...")
-    print("🔄 PDF එකෙන් දත්ත නිස්සාරණය කරමින්...")
-    data = extractor.extract_all(pdf_file)
+    try:
+        from desktop_pipeline import process_pdf_hyper_hybrid
+        
+        # Run the official institutional master pipeline
+        result = process_pdf_hyper_hybrid(
+            pdf_path=pdf_file,
+            output_folder="outputs"
+        )
+        
+        if result.get("success"):
+            print("\n" + "=" * 50)
+            print("✅ INSTITUTIONAL PROCESSING COMPLETE!")
+            print("=" * 50)
+            print(f"📂 Results in: outputs")
+            for pdf in result.get('generated_pdfs', []):
+                print(f"   ✓ {os.path.basename(pdf)}")
+            print()
+            return
+        else:
+            print(f"❌ Pipeline failed: {result.get('error')}")
+            # Fallback to pure regex if pipeline fails
+            print("⚠️ Falling back to pure Regex extraction...")
+            data = extractor.extract_all(pdf_file)
+    except Exception as e:
+        print(f"⚠️ Master pipeline error: {e}")
+        print("⚠️ Falling back to basic regex extraction...")
+        data = extractor.extract_all(pdf_file)
     
     if "error" in data:
         print(f"❌ Error: {data['error']}")
         return
     
-    # Save JSON
-    print("💾 Saving JSON data...")
-    print("💾 JSON දත්ත සුරකිමින්...")
+    # Save the base extraction JSON
+    print("💾 Saving base extraction data...")
     extractor.save_to_json(data, output_json)
     
-    # Generate and save summary
-    print("📋 Generating summary report...")
-    print("📋 සාරාංශ වාර්තාව ජනනය කරමින්...")
+    # Generate summary report
     summary = extractor.generate_summary_report(data)
     
     with open(output_summary, 'w', encoding='utf-8') as f:
@@ -484,6 +540,46 @@ def main():
     print("=" * 80)
     print("✅ Extraction complete! / නිස්සාරණය සම්පූර්ණයි!")
     print("=" * 80)
+    print()
+    
+    # Generate English Reports (General & Security) using institutional 4-stage pipeline
+    print("=" * 80)
+    print("🚀 Running Institutional 4-Stage Pipeline (100% Accuracy Mode)...")
+    print("🚀 පියවර 4 කින් සමන්විත ආයතනික ක්‍රියාවලිය ක්‍රියාත්මක කරමින් (100% නිවැරදිකම)...")
+    print("=" * 80)
+    
+    try:
+        from process_and_translate import process_and_translate
+        
+        # We'll use the current folder as app_config_folder for outputs
+        result = process_and_translate(
+            data=data, 
+            filename=os.path.basename(pdf_file), 
+            app_config_folder="."
+        )
+        
+        if result.get("success"):
+            print("\n" + "=" * 50)
+            print("✅ INSTITUTIONAL PROCESSING COMPLETE!")
+            print("=" * 50)
+            print(f"📁 Results in: {result['output_dir']}")
+            for pdf in result['files']:
+                print(f"   ✓ {os.path.basename(pdf)}")
+            print()
+        else:
+            print("❌ Pipeline failed to complete successfully.")
+            
+    except Exception as e:
+        print(f"❌ Error in institutional pipeline: {e}")
+        import traceback; traceback.print_exc()
+        
+    except ImportError as e:
+        print(f"⚠ Report generation skipped: {e}")
+        print("⚠ Make sure general_report_engine.py and web_report_engine_v2.py are available")
+    except Exception as e:
+        print(f"❌ Error generating reports: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
@@ -493,5 +589,5 @@ if __name__ == "__main__":
     else:
         print("Starting Police Web UI (Classic Mode)...")
         from police_web_ui import app as flask_app
-        # Run on port 5000 as previously requested in the documentation
-        flask_app.run(host='0.0.0.0', port=5000, debug=True)
+        # Run on port 5000 - disable debug mode for production
+        flask_app.run(host='0.0.0.0', port=5000, debug=False)

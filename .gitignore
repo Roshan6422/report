@@ -26,8 +26,14 @@ tmp/
 !demo_report.pdf
 !Test_General_Report.pdf
 !Test_General_With_Nil.pdf
-!Test_Security_With_Nil.pdf
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Models (Too large for GitHub)
+*.safetensors
+*.bin
+*.pth
+*.onnx
+model.safetensors

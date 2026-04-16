@@ -23,7 +23,8 @@ def parse_high_fidelity_markdown(markdown_text):
                 sfx = 'th' if 11<=day<=13 else {1:'st', 2:'nd', 3:'rd'}.get(day%10, 'th')
                 return d.strftime(f"{day}{sfx} %B %Y")
             data["date_range"] = f"From 0400 hrs. on {ord_f(d1)} to 0400 hrs. on {ord_f(d2)}"
-        except: pass
+        except (ValueError, IndexError):
+            pass
 
     # 2. Partition Sections by Header (## 01. ...)
     # Look for headers like "## 01. SERIOUS CRIMES" or similar
@@ -77,13 +78,26 @@ def parse_high_fidelity_markdown(markdown_text):
             
             def _clean_sl_chars(txt):
                 if not txt: return ""
-                # Strip all Unicode characters in the Sinhala range (0D80-0DFF)
-                return re.sub(r'[\u0D80-\u0DFF]+', '', txt).strip()
+                # Strip Sinhala (U+0D80-0DFF) and Tamil (U+0B80-0BFF) script characters,
+                # but only if the text is predominantly Latin (English).
+                # If text is mostly non-Latin, return as-is to avoid data destruction.
+                latin_chars = len(re.findall(r'[a-zA-Z]', txt))
+                total_alpha = len(re.findall(r'\w', txt))
+                if total_alpha > 0 and latin_chars / total_alpha < 0.3:
+                    return txt.strip()  # Mostly non-Latin — don't strip
+                return re.sub(r'[\u0D80-\u0DFF\u0B80-\u0BFF]+', '', txt).strip()
 
             hierarchy_str = _clean_sl_chars(h_match.group(1)) if h_match else ""
             summary = _clean_sl_chars(s_match.group(1)) if s_match else ""
             narrative = _clean_sl_chars(n_match.group(1)) if n_match else content
             ref = _clean_sl_chars(r_match.group(1)) if r_match else ""
+            
+            # If no explicit summary but narrative starts with a parenthesis, extract it!
+            if not summary and narrative.strip().startswith('('):
+                paren_match = re.match(r'^\(([^)]+)\)', narrative.strip())
+                if paren_match:
+                    summary = paren_match.group(1)
+                    narrative = narrative.strip()[len(paren_match.group(0)):].strip()
             
             # Clean summary (ensure it's in parentheses if not already)
             if summary and not summary.startswith('('): summary = f"({summary})"

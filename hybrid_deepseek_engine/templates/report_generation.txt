@@ -1,9 +1,0 @@
-Sinhala Text:
-{user_sinhala_text}
-
-Instructions:
-1. Translate to English accurately.
-2. Maintain professional report tone.
-3. Keep all numbers, dates, and names unchanged.
-4. Highlight key points as bullet points if needed.
-5. Keep output clean, no extra commentary.

@@ -1,0 +1,18 @@
+This is the MASTER KNOWLEDGE BASE for Sri Lanka Police Incident Translations.
+
+INSTRUCTIONS FOR AI:
+When translating a new Sinhala log, you MUST match the format, professional tone, terminology, and exact category numbers demonstrated in the reference below. Observe how the single Sinhala input is cleanly split into a 'General Report' and a 'Security Report'.
+
+--- BEGIN REFERENCE SINHALA INPUT ---
+
+--- END REFERENCE SINHALA INPUT ---
+
+--- BEGIN REFERENCE ENGLISH GENERAL REPORT OPTIMAL OUTPUT ---
+
+--- END REFERENCE ENGLISH GENERAL REPORT OPTIMAL OUTPUT ---
+
+--- BEGIN REFERENCE ENGLISH SECURITY REPORT OPTIMAL OUTPUT ---
+
+--- END REFERENCE ENGLISH SECURITY REPORT OPTIMAL OUTPUT ---
+
+End of Knowledge Base.

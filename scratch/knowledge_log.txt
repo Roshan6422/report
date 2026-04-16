@@ -1,0 +1,135 @@
+﻿[Full Context] Extracting text for Master Knowledge Base...
+1. Extracting Sinhala Original...
+[OCR] Converting PDF ÔåÆ images @ 200 DPI ÔÇª
+[OCR] Trying GPU Fast API: http://localhost:9999/gpu-ocr
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+[OCR] ÔÜá´©Å GPU API failed or returned empty. Falling back to Local Tesseract.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+2. Extracting English General...
+[OCR] Converting PDF ÔåÆ images @ 200 DPI ÔÇª
+[OCR] Trying GPU Fast API: http://localhost:9999/gpu-ocr
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+[OCR] ÔÜá´©Å GPU API failed or returned empty. Falling back to Local Tesseract.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+3. Extracting English Security...
+[OCR] Converting PDF ÔåÆ images @ 200 DPI ÔÇª
+[OCR] Trying GPU Fast API: http://localhost:9999/gpu-ocr
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+  [OCR] Resized page to 1414x2000 (Safe Connection Mode)
+[Surya API] Request failed: HTTPConnectionPool(host='localhost', port=9999): Max retries exceeded with url: /gpu-ocr (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9999): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+[OCR] ÔÜá´©Å GPU API failed or returned empty. Falling back to Local Tesseract.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+[Tesseract] PSM 6 failed: tesseract is not installed or it's not in your PATH. See README file for more information.
+Saving to master_knowledge.txt...
+[Done] Master Knowledge created successfully at: d:\PROJECTS\pdf convert tool\dataset\master_knowledge.txt

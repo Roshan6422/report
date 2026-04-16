@@ -11,63 +11,21 @@ from typing import List, Dict, Tuple
 SECURITY_CATEGORIES = {
     "01. VERY IMPORTANT MATTERS OF SECURITY INTEREST": {
         "keywords": [
-            # High-level threats
-            "terrorism", "terrorist", "national security", "vip security",
-            "assassination", "bomb threat", "security breach", "intelligence",
-            "espionage", "sabotage", "coup", "insurgency",
-            # VIP related
-            "president", "prime minister", "minister", "diplomat", "embassy",
-            "high commissioner", "vip", "dignitary",
-            # Major incidents
-            "major incident", "critical", "emergency", "alert",
-            "threat level", "security alert", "imminent threat",
-            # Organized crime
-            "organized crime", "mafia", "cartel", "syndicate",
-            "human trafficking", "drug trafficking", "smuggling ring"
+            "terrorism", "terrorist", "special attention", "special attention incident"
         ],
         "priority": 1
     },
     
     "02. SUBVERSIVE ACTIVITIES": {
         "keywords": [
-            # Anti-government
-            "subversive", "anti-government", "sedition", "treason",
-            "rebellion", "revolt", "uprising", "insurrection",
-            # Extremism
-            "extremist", "radical", "militant", "separatist",
-            "fundamentalist", "jihadist", "insurgent",
-            # Unlawful assembly
-            "unlawful assembly", "illegal gathering", "protest", "demonstration",
-            "riot", "mob", "unrest", "disturbance",
-            # Propaganda
-            "propaganda", "inflammatory", "incitement", "hate speech",
-            "seditious material", "banned literature", "extremist literature",
-            # Organizations
-            "banned organization", "proscribed group", "terrorist organization",
-            "separatist group", "militant group"
+            "protest", "subversive", "demonstration", "anti-government", "unlawful assembly"
         ],
         "priority": 2
     },
     
     "03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES": {
         "keywords": [
-            # Firearms
-            "firearm", "gun", "pistol", "revolver", "rifle", "shotgun",
-            "weapon", "t-56", "ak-47", "assault rifle", "automatic weapon",
-            "semi-automatic", "handgun", "carbine", "sniper rifle",
-            # Ammunition
-            "ammunition", "bullet", "round", "cartridge", "shell",
-            "magazine", "clip", "9mm", "7.62mm", ".38", ".45",
-            # Explosives
-            "explosive", "bomb", "grenade", "mine", "ied",
-            "detonator", "fuse", "blasting cap", "c-4", "tnt",
-            "dynamite", "gelignite", "gunpowder", "explosive device",
-            # Components
-            "bomb-making", "explosive material", "chemical", "fertilizer bomb",
-            "timer", "trigger mechanism", "remote detonator",
-            # Military equipment
-            "military equipment", "army equipment", "ordnance",
-            "mortar", "rocket", "missile", "launcher"
+            "arms recovery", "firearm", "gun", "ammunition", "explosive", "detonator", "weapon recovery"
         ],
         "priority": 3
     }
@@ -121,8 +79,8 @@ class SecurityCategorizer:
         
         # Find best match
         if not any(s["score"] > 0 for s in scores.values()):
-            # Default to category 3 (Arms Recovery) if no clear match
-            return "03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES", 0.5
+            # Filter out non-important incidents
+            return "UNCATEGORIZED", 0.0
         
         best_category = max(scores.items(), key=lambda x: x[1]["score"])
         category_name = best_category[0]
@@ -158,7 +116,8 @@ class SecurityCategorizer:
             incident["category_confidence"] = confidence
             
             # Add to appropriate category
-            categorized[category].append(incident)
+            if category in categorized:
+                categorized[category].append(incident)
             
             # Update stats
             self.stats["total_incidents"] += 1
@@ -168,6 +127,8 @@ class SecurityCategorizer:
                 self.stats["category_2"] += 1
             elif "03." in category:
                 self.stats["category_3"] += 1
+            elif category == "UNCATEGORIZED":
+                self.stats["uncategorized"] += 1
         
         return categorized
     

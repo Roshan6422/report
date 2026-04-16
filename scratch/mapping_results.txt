@@ -1,0 +1,35 @@
+Found 7 Sinhala files and 13 English files.
+
+Alignment Mapping:
+[2026-03-14]
+  SIN: 2026.03.14 දින සිදුවිම් වාර්තාව.pdf
+  ENG: 14 March  2026 Security.pdf, 14 March 2026 General.pdf
+----------------------------------------
+[2026-03-16]
+  SIN: MISSING
+  ENG: 16 March  2026 Security Report.pdf
+----------------------------------------
+[2026-03-18]
+  SIN: 2026.03.18 දින  සිදුවිම් වාර්තාව.pdf
+  ENG: MISSING
+----------------------------------------
+[2026-03-19]
+  SIN: 2026.03.19 දින සිදුවීම් වාර්තාව.pdf
+  ENG: 19 March  2026 Security Report.pdf, 19 March 2026 General Report.pdf
+----------------------------------------
+[2026-03-20]
+  SIN: 2026.03.20 දින සිදුවිම් වාර්තාව.pdf
+  ENG: 20 March  2026 Security.pdf, 20 March 2026 General.pdf
+----------------------------------------
+[2026-03-21]
+  SIN: 2026.03.21 දින සිදුවීම් වාර්තාව.pdf
+  ENG: 21 March  2026 Security Report.pdf, 21 March 2026 General Report.pdf
+----------------------------------------
+[2026-03-22]
+  SIN: 2026.03.22 දින සිදුවිම් වාර්තාව.pdf
+  ENG: 22 March  2026 Security.pdf, 22 March 2026 General.pdf
+----------------------------------------
+[2026-03-23]
+  SIN: 2026.03.23 දින සිදුවීම් වාර්තාව.pdf
+  ENG: 23 March  2026 Security Rrport.pdf, 23 March 2026 General Rrport.pdf
+----------------------------------------

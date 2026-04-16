@@ -1,1 +1,0 @@
-❌ Ollama Error: 404

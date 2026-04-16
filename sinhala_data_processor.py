@@ -196,7 +196,8 @@ EXAMPLE BODY:
 "A case of a theft of gold jewellery (05 sovereigns) valued Rs. 1,975,000/= was reported to the police station. The offence took place on the 17th of March 2026 between 0430 hrs and 0500 hrs at # 18/48, Induvil west, Induvil, Chunnakam. Complainant named S. Sarwalogeshwari, (TP 077-5692523). Suspect: Unknown. The stolen jewellery not recovered and investigations in process. Motive: For illegal gain. (CTM.524)"
 
 RESPOND WITH ONLY THE JSON, NO OTHER TEXT OR MARKDOWN.
-
+"""
+        
         try:
             response = self.ai_manager.generate_text(
                 prompt=prompt,
@@ -209,7 +210,8 @@ RESPOND WITH ONLY THE JSON, NO OTHER TEXT OR MARKDOWN.
                 json_text = response["text"].strip()
                 # Remove markdown code blocks if present
                 if json_text.startswith("```"):
-                    json_text = json_text.split("```")[1]
+                    parts = json_text.split("```")
+                    json_text = parts[1] if len(parts) > 1 else json_text
                     if json_text.startswith("json"):
                         json_text = json_text[4:]
                 json_text = json_text.strip()
@@ -237,7 +239,8 @@ RESPOND WITH ONLY THE JSON, NO OTHER TEXT OR MARKDOWN.
         security_keywords = [
             "arms", "ammunition", "explosive", "detonator", "gunpowder",
             "firearm", "shotgun", "weapon", "gun", "bullet", "grenade",
-            "subversive", "terrorist", "security threat"
+            "subversive", "terrorist", "terrorism", "security threat",
+            "protest", "special attention", "national security"
         ]
         
         # Check if it's a security incident
@@ -382,23 +385,17 @@ RESPOND WITH ONLY THE JSON, NO OTHER TEXT OR MARKDOWN.
         if self.security_incidents:
             print(f"\n📋 Security Report: {len(self.security_incidents)} incidents")
             
-            # Categorize security incidents (all go to Category 03)
-            provinces_dict = {}
-            for inc in self.security_incidents:
-                prov = inc.get("province", "UNKNOWN").upper()
-                if prov not in provinces_dict:
-                    provinces_dict[prov] = []
-                provinces_dict[prov].append(inc)
+            # Use SecurityCategorizer to split into the 3 correct sections
+            from security_categorizer import SecurityCategorizer
+            sec_cat = SecurityCategorizer()
             
-            provinces_list = [{"name": p, "incidents": incs} for p, incs in provinces_dict.items()]
+            # Form incidents mapping for categorizer
+            categorized_security = sec_cat.categorize_batch(self.security_incidents)
+            organized_security = sec_cat.organize_by_province(categorized_security)
             
             security_data = {
                 "date_range": date_range,
-                "sections": [
-                    {"title": "01. VERY IMPORTANT MATTERS OF SECURITY INTEREST:", "provinces": []},
-                    {"title": "02. SUBVERSIVE ACTIVITIES:", "provinces": []},
-                    {"title": "03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES:", "provinces": provinces_list}
-                ]
+                "sections": organized_security["sections"]
             }
             
             security_html = f"{output_prefix}_Security.html"
