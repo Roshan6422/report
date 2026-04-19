@@ -1,1 +1,1 @@
-web: gunicorn --bind :$PORT backend_cloud:app
+web: gunicorn --bind :$PORT main:app
