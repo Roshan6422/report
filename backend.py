@@ -20,7 +20,7 @@ from pyngrok import ngrok
 # --- CONFIGURATION ---
 # The JSON key is gitignored for security
 SERVICE_ACCOUNT_FILE = 'google_vision_key.json' 
-NGROK_AUTH_TOKEN = "3C0C7gFkX4IQuTy2cMMPHYznbNh_4CZ5YG6ekExX6sBKNfhpv" 
+NGROK_AUTH_TOKEN = os.environ.get("NGROK_AUTH_TOKEN", "YOUR_TOKEN_HERE") 
 PORT = 5050
 
 app = Flask(__name__)
