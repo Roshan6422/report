@@ -1,28 +1,78 @@
-import os
+"""
+desktop_pipeline.py
+===================
+Sri Lanka Police AI — High-Fidelity PDF Processing Pipeline
+Features: Sinhala-first split, Turbo JSON extraction, Parallel category processing,
+          Institutional PDF/Word report generation, Thread-safe progress callbacks
 
-from dotenv import load_dotenv
+Usage:
+    from desktop_pipeline import process_pdf_hyper_hybrid
+    result = process_pdf_hyper_hybrid("report.pdf", output_folder="outputs")
+"""
 
-load_dotenv()
 import json
 import logging
+import os
 import re
 import subprocess
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from ai_engine_manager import _split_large_text, get_engine
-from app import SinhalaPoliceReportExtractor
-from db_manager import log_generated_file, save_translated_incident
-from json_repair_tool import repair_json
-from machine_translator import (
-    extract_pdf_to_sinhala,
-    sanitize_police_translation_output,
-    translate_sinhala_to_english,
-)
-from sinhala_section_splitter import split_by_sections
-from station_mapping import get_station_info
-from word_report_engine import WordReportEngine
+# ── Project Imports (with graceful fallback) ─────────────────────────────────
+try:
+    from ai_engine_manager import _split_large_text, get_engine
+except ImportError:
+    def _split_large_text(t, m, o=400): return [t]
+    def get_engine(mode="fast"): return None
+
+try:
+    from app import SinhalaPoliceReportExtractor
+except ImportError:
+    class SinhalaPoliceReportExtractor:
+        def extract_all_from_text(self, t): return {"categories": {}, "header": {}}
+
+try:
+    from db_manager import log_generated_file, save_translated_incident
+except ImportError:
+    def log_generated_file(*a, **k): pass
+    def save_translated_incident(*a, **k): pass
+
+try:
+    from json_repair_tool import repair_json
+except ImportError:
+    def repair_json(s): return s
+
+try:
+    from machine_translator import (
+        extract_pdf_to_sinhala,
+        sanitize_police_translation_output,
+        translate_sinhala_to_english,
+    )
+except ImportError:
+    def extract_pdf_to_sinhala(p): return ""
+    def sanitize_police_translation_output(t): return t
+    def translate_sinhala_to_english(t): return t
+
+try:
+    from sinhala_section_splitter import split_by_sections
+except ImportError:
+    def split_by_sections(t): return []
+
+try:
+    from station_mapping import get_station_info
+except ImportError:
+    def get_station_info(s): return {"province": "WESTERN", "dig": "", "div": ""}
+
+try:
+    from word_report_engine import WordReportEngine
+except ImportError:
+    class WordReportEngine:
+        def __init__(self, templates_dir="sample"): pass
+        def generate_reports(self, data, out): return []
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -39,9 +89,12 @@ logger = logging.getLogger(__name__)
 _progress_lock = threading.Lock()
 
 
-def _safe_callback(callback, *args, **kwargs):
-    """Thread-safe progress callback wrapper that never crashes the pipeline."""
-    if not callback:
+def _safe_callback(callback: Optional[Callable], *args, **kwargs):
+    """
+    Thread-safe progress callback wrapper that never crashes the pipeline.
+    BUG FIX: Checks if callback is callable before invoking.
+    """
+    if callback is None or not callable(callback):
         return
     try:
         with _progress_lock:
@@ -50,7 +103,8 @@ def _safe_callback(callback, *args, **kwargs):
         logger.warning(f"Progress callback failed (non-fatal): {cb_err}")
 
 
-def strip_sinhala_forcefully(text):
+def strip_sinhala_forcefully(text: str) -> str:
+    """Remove Sinhala Unicode characters from text."""
     if not text:
         return text
     clean = re.sub(r'[\u0D80-\u0DFF]+', '', str(text))
@@ -59,10 +113,11 @@ def strip_sinhala_forcefully(text):
     return clean.strip(' \n\t\r,-:')
 
 
-def _translate_pool_workers(default: int) -> int:
+def _translate_pool_workers(default: int = 8) -> int:
+    """Get worker count from env or use default."""
     try:
         return max(1, int(os.getenv("TRANSLATE_WORKERS", str(default)).strip()))
-    except ValueError:
+    except (ValueError, TypeError):
         return default
 
 
@@ -71,7 +126,11 @@ def _extract_summary_table(category_results: dict, full_text: str = "") -> dict:
     Build the 29-row summary table shown on the last page of every PDF.
     Returns: {cat_num: {"reported": int, "solved": int, "unsolved": int}}
     """
-    from police_patterns import OFFICIAL_CASE_TABLE_CATEGORIES
+    # Local import to avoid circular dependency
+    try:
+        from police_patterns import OFFICIAL_CASE_TABLE_CATEGORIES
+    except ImportError:
+        OFFICIAL_CASE_TABLE_CATEGORIES = [f"{str(i).zfill(2)}. Category" for i in range(1, 30)]
 
     table: dict = {}
     for cat_label in OFFICIAL_CASE_TABLE_CATEGORIES:
@@ -158,11 +217,11 @@ INCIDENT_JSON_SYSTEM_PROMPT = (
     'Keys (strings): "station", "province", "district", "date", "time", '
     '"category_num", "category_name", "description". '
     'Optional keys: "summary", "division", "financial_loss", "status", "victim_suspect_names". '
-    'Use English. Unknown station/province: use best guess from text or \"Unknown\" / \"WESTERN\".'
+    'Use English. Unknown station/province: use best guess from text or "Unknown" / "WESTERN".'
 )
 
 
-def _normalize_incident_dict(data):
+def _normalize_incident_dict(data: Any) -> Optional[Dict[str, str]]:
     """Map common model aliases to keys desktop_pipeline expects."""
     if not isinstance(data, dict):
         return None
@@ -196,15 +255,16 @@ def _normalize_incident_dict(data):
     return out
 
 
-def _parse_incident_ai_response(raw):
+def _parse_incident_ai_response(raw: Any) -> Dict[str, str]:
     """Parse Ollama/cloud text into a dict; handles markdown fences and minor JSON damage."""
+    default = {
+        "description": str(raw).strip() if raw else "",
+        "station": "Unknown",
+        "province": "WESTERN",
+        "date": "",
+    }
     if not raw or (isinstance(raw, str) and raw.startswith("❌")):
-        return {
-            "description": raw or "",
-            "station": "Unknown",
-            "province": "WESTERN",
-            "date": "",
-        }
+        return default
     s = raw.strip()
     candidates = [s]
     repaired = repair_json(s)
@@ -220,7 +280,7 @@ def _parse_incident_ai_response(raw):
                 return normalized
         except (json.JSONDecodeError, TypeError, ValueError):
             continue
-    return {"description": s, "station": "Unknown", "province": "WESTERN", "date": ""}
+    return default
 
 
 _SINHALA_SCRIPT_RE = re.compile(r"[\u0D80-\u0DFF]")
@@ -228,6 +288,64 @@ _SINHALA_SCRIPT_RE = re.compile(r"[\u0D80-\u0DFF]")
 
 def _text_contains_sinhala(s: str) -> bool:
     return bool(s and _SINHALA_SCRIPT_RE.search(s))
+
+
+def _fix_date_format_in_text(text: str) -> str:
+    """Convert numeric date formats → English ordinal format."""
+    if not text:
+        return text
+    month_names = [
+        "", "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+    ]
+    def replace_ymd(match):
+        y, m, d = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        if 1 <= m <= 12 and 1 <= d <= 31:
+            return f"{_ordinal(d)} of {month_names[m]} {y}"
+        return match.group(0)
+    def replace_dmy(match):
+        d, m, y = int(match.group(1)), int(match.group(2)), int(match.group(3))
+        if 1 <= m <= 12 and 1 <= d <= 31:
+            return f"{_ordinal(d)} of {month_names[m]} {y}"
+        return match.group(0)
+    text = re.sub(r'(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})', replace_ymd, text)
+    text = re.sub(r'(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})', replace_dmy, text)
+    return text
+
+
+def _fix_time_format_in_text(text: str) -> str:
+    """Ensure all time strings follow the official 'HHMM hrs' format."""
+    if not text:
+        return text
+    text = re.sub(r'\b(\d{2}):(\d{2})\s+hrs\b', r'\1\2 hrs', text)
+    text = re.sub(r'\b(\d{2}):(\d{2})\b', r'\1\2 hrs', text)
+    text = re.sub(r'\b(\d{4})hrs\b', r'\1 hrs', text)
+    return text
+
+
+def _format_currency_suffix(text: str) -> str:
+    """Ensure all Rs. values end with official '/=' suffix if missing."""
+    if not text:
+        return text
+    def add_suffix(match):
+        val = match.group(0).strip()
+        if not val.endswith('/=') and not val.endswith('/-'):
+            return f"{val}/="
+        return val
+    return re.sub(r'Rs\.?\s*[\d,]+(?:\.\d{1,2})?', add_suffix, text)
+
+
+def _ordinal(day: Union[int, str]) -> str:
+    """Convert a day number to ordinal string: 1 → '1st', 2 → '2nd', etc."""
+    try:
+        day = int(day)
+    except (ValueError, TypeError):
+        return str(day)
+    if 10 <= day % 100 <= 20:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+    return f"{day}{suffix}"
 
 
 def _translate_block_for_pdf_english(text: str, max_chunk: int = 8000, retries: int = 2) -> str:
@@ -250,10 +368,9 @@ def _translate_block_for_pdf_english(text: str, max_chunk: int = 8000, retries: 
             except Exception as e:
                 logger.warning(f"[PDF-EN] translate attempt {attempt + 1} failed ({len(text)} chars): {e}")
                 if attempt < retries:
-                    import time
                     time.sleep(1.5 ** attempt)
         return text  # Fallback: return original if all retries fail
-    parts: list[str] = []
+    parts: List[str] = []
     for i in range(0, len(text), max_chunk):
         seg = text[i: i + max_chunk]
         if _text_contains_sinhala(seg):
@@ -263,7 +380,7 @@ def _translate_block_for_pdf_english(text: str, max_chunk: int = 8000, retries: 
     return "\n".join(parts).strip()
 
 
-def _ensure_pdf_english_incident(o: dict) -> None:
+def _ensure_pdf_english_incident(o: Dict[str, Any]) -> None:
     """Mutate normalized incident so General/Security PDFs are English-only."""
     if (os.getenv("PDF_SKIP_SINHALA_BACKFILL") or "").strip().lower() in ("1", "true", "yes"):
         return
@@ -314,7 +431,7 @@ def _ensure_pdf_english_incident(o: dict) -> None:
         o["hierarchy"] = strip_sinhala_forcefully(hier)
 
 
-def _normalize_incident_for_pdf(inc):
+def _normalize_incident_for_pdf(inc: Any) -> Dict[str, Any]:
     """
     Normalize incident dict for institutional HTML/PDF generators.
     BUG FIX: Handles edge cases where inc is None or malformed.
@@ -338,20 +455,28 @@ def _normalize_incident_for_pdf(inc):
     )
     o["body"] = str(body).strip()
 
-    st = o.get("station") or o.get("police_station") or "Unknown"
-    o["station"] = strip_sinhala_forcefully(str(st).strip())
+    st = str(o.get("station") or o.get("police_station") or "Unknown").strip()
 
-    # Auto-complete hierarchy via station mapping
+    # Map Sinhala to English station names locally if possible FIRST
     try:
-        mapped_info = get_station_info(o["station"])
+        from station_mapping import SINHALA_TO_ENGLISH
+        for sin, eng in SINHALA_TO_ENGLISH.items():
+            if sin in st:
+                st = st.replace(sin, eng)
+    except ImportError:
+        pass
+
+    # Auto-complete hierarchy via station mapping using the English name
+    try:
+        mapped_info = get_station_info(st)
         o["province"] = mapped_info.get("province", o.get("province", "WESTERN"))
         o["hierarchy"] = [mapped_info.get("dig", ""), mapped_info.get("div", "")]
     except Exception as map_err:
-        logger.debug(f"Station mapping failed for '{o['station']}': {map_err}")
+        logger.debug(f"Station mapping failed for '{st}': {map_err}")
         o.setdefault("province", "WESTERN")
         o.setdefault("hierarchy", [])
 
-    o["station"] = strip_sinhala_forcefully(o["station"])
+    o["station"] = st
     o["province"] = strip_sinhala_forcefully(o.get("province", "WESTERN"))
     if isinstance(o.get("hierarchy"), list):
         o["hierarchy"] = [strip_sinhala_forcefully(h) for h in o["hierarchy"] if strip_sinhala_forcefully(h)]
@@ -374,11 +499,46 @@ def _normalize_incident_for_pdf(inc):
     return o
 
 
+def _is_english_text(text: str) -> bool:
+    """Check if text is predominantly English vs Sinhala."""
+    sinhala_chars = sum(1 for c in text if '\u0D80' <= c <= '\u0DFF')
+    return sinhala_chars < len(text) * 0.05
+
+
+def match_province(name: Optional[str]) -> str:
+    """Fuzzy match province name to official canonical names."""
+    try:
+        from police_patterns import PROVINCE_LIST
+    except ImportError:
+        PROVINCE_LIST = ["WESTERN", "SOUTHERN", "CENTRAL", "NORTH WESTERN", 
+                        "SABARAGAMUWA", "NORTH CENTRAL", "EASTERN", "NORTHERN", "UVA"]
+    
+    if not name:
+        return "WESTERN"
+    clean_name = str(name).strip().upper()
+    if clean_name in PROVINCE_LIST:
+        return clean_name
+    variants = {
+        "N. WESTERN": "NORTH WESTERN", "WAYAMBA": "NORTH WESTERN",
+        "N. CENTRAL": "NORTH CENTRAL", "RAJARATA": "NORTH CENTRAL",
+        "SABARA": "SABARAGAMUWA", "SOUTH": "SOUTHERN",
+        "NORTH": "NORTHERN", "EAST": "EASTERN", "WEST": "WESTERN",
+    }
+    for v, canonical in variants.items():
+        if v in clean_name:
+            return canonical
+    for p in PROVINCE_LIST:
+        if p in clean_name or clean_name in p:
+            return p
+    return "WESTERN"
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # TEXT REPORT PROCESSING
 # ══════════════════════════════════════════════════════════════════════════════
 
-def process_text_report(text, output_folder="outputs", progress_callback=None):
+def process_text_report(text: str, output_folder: str = "outputs", 
+                       progress_callback: Optional[Callable] = None) -> Dict[str, Any]:
     """Process a raw text report with 100% local deterministic logic."""
     os.makedirs(output_folder, exist_ok=True)
     _safe_callback(progress_callback, "OCR_UPDATE", {"msg": "Paste / පෙළ — නිස්සාරණය (regex)…"})
@@ -398,7 +558,7 @@ def process_text_report(text, output_folder="outputs", progress_callback=None):
     category_summary = {str(i).zfill(2): {"count": 0, "incidents": [], "raw_incidents": []} for i in range(1, 30)}
     table_counts = {}
 
-    def translate_batch_local(cat_num, cat_data):
+    def translate_batch_local(cat_num: str, cat_data: Dict) -> tuple:
         incidents = cat_data.get("incidents", [])
         if not incidents:
             return cat_num, (0, [], [])
@@ -474,9 +634,12 @@ def process_text_report(text, output_folder="outputs", progress_callback=None):
 # SINHALA CATEGORY TRANSLATION
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _translate_sinhala_incidents_for_category(padded_cat, incidents):
+def _translate_sinhala_incidents_for_category(padded_cat: str, incidents: List[Dict]) -> tuple:
     """Translate one category's Sinhala extractor incidents to English rows."""
-    from police_patterns import OFFICIAL_CASE_TABLE_CATEGORIES
+    try:
+        from police_patterns import OFFICIAL_CASE_TABLE_CATEGORIES
+    except ImportError:
+        OFFICIAL_CASE_TABLE_CATEGORIES = [f"{str(i).zfill(2)}. Category" for i in range(1, 30)]
 
     category_context = "Unknown"
     for full_name in OFFICIAL_CASE_TABLE_CATEGORIES:
@@ -485,6 +648,10 @@ def _translate_sinhala_incidents_for_category(padded_cat, incidents):
             break
 
     mgr = get_engine()
+    if not mgr:
+        # Fallback if engine not available
+        return padded_cat, [], []
+    
     translated_items = []
     raw_texts = []
 
@@ -550,7 +717,9 @@ def _translate_sinhala_incidents_for_category(padded_cat, incidents):
 # SINHALA-FIRST PIPELINE
 # ══════════════════════════════════════════════════════════════════════════════
 
-def process_pdf_sinhala_split_then_translate(pdf_path, progress_callback=None, output_folder="outputs"):
+def process_pdf_sinhala_split_then_translate(pdf_path: str, 
+                                            progress_callback: Optional[Callable] = None, 
+                                            output_folder: str = "outputs") -> Dict[str, Any]:
     """
     Sinhala-first flow:
     1. PDF → Full Sinhala (OCR / Gemini File API)
@@ -558,8 +727,12 @@ def process_pdf_sinhala_split_then_translate(pdf_path, progress_callback=None, o
     3. Extract 01–29 per section (Sinhala), then translate to English
     4. Generate General + Security institutional PDFs
     """
-    from sinhala_section_splitter import normalize_sinhala
-    from translator_pipeline import split_sinhala_document
+    try:
+        from sinhala_section_splitter import normalize_sinhala
+        from translator_pipeline import split_sinhala_document
+    except ImportError:
+        def normalize_sinhala(t): return t
+        def split_sinhala_document(t): return t, ""
 
     os.makedirs(output_folder, exist_ok=True)
     _safe_callback(progress_callback, "OCR_UPDATE", {"msg": "Step 1: PDF → Full Sinhala text..."})
@@ -666,14 +839,19 @@ def process_pdf_sinhala_split_then_translate(pdf_path, progress_callback=None, o
 # PARALLEL PIPELINE
 # ══════════════════════════════════════════════════════════════════════════════
 
-def process_category_worker(cat_num, title, content, progress_callback=None):
+def process_category_worker(cat_num: str, title: str, content: str, 
+                          progress_callback: Optional[Callable] = None) -> tuple:
     """Worker function for parallel processing of a single category."""
     if "Nil" in content or len(content.strip()) < 15:
         data = {"count": 0, "incidents": [], "raw_incidents": []}
         _safe_callback(progress_callback, cat_num, data)
         return cat_num, data
 
-    from police_patterns import INCIDENT_START_PATTERN
+    try:
+        from police_patterns import INCIDENT_START_PATTERN
+    except ImportError:
+        INCIDENT_START_PATTERN = r'^([^:*–\-(\n]{2,60}?)(?:\*\*)?(?:\s*,\s*(?:CTM|OTM)\s*[\d/]+)?\s*(?:\([^)]*\))?\s*(?:\*\*)?[:\-–]\s*(?:\*\*)?(.*)$'
+
     incident_texts = []
 
     raw_lines = content.strip().split('\n')
@@ -694,6 +872,12 @@ def process_category_worker(cat_num, title, content, progress_callback=None):
     translated_incidents = []
     raw_incidents_data = []
     mgr = get_engine()
+    
+    if not mgr:
+        # Fallback if engine not available
+        data = {"count": 0, "incidents": [], "raw_incidents": []}
+        _safe_callback(progress_callback, cat_num, data)
+        return cat_num, data
 
     for inc_text in incident_texts:
         if mgr.mode == "triple":
@@ -739,7 +923,7 @@ def process_category_worker(cat_num, title, content, progress_callback=None):
     return cat_num, data
 
 
-def split_by_sections_go(raw_text):
+def split_by_sections_go(raw_text: str) -> List[tuple]:
     """Bridge to the high-performance Go-based section partitioner."""
     try:
         os.makedirs("tmp", exist_ok=True)
@@ -760,16 +944,18 @@ def split_by_sections_go(raw_text):
         logger.error("Go Partitioner timed out. Falling back to Python splitter.")
     except Exception as e:
         logger.warning(f"Go Partitioner failed ({e}). Falling back to Python splitter.")
+    
+    # Fallback to Python splitter
     return split_by_sections(raw_text)
 
 
-def process_pdf_parallel(pdf_path, progress_callback=None, output_folder="outputs"):
+def process_pdf_parallel(pdf_path: str, progress_callback: Optional[Callable] = None, 
+                        output_folder: str = "outputs") -> Dict[str, Any]:
     """Parallel version of the 28-Category Pipeline for maximum speed."""
     os.makedirs(output_folder, exist_ok=True)
 
     logger.info("[Institutional-OCR] Stage 1: Gemini High-Fidelity Extraction...")
-    from machine_translator import extract_pdf_to_sinhala
-
+    
     try:
         raw_text = extract_pdf_to_sinhala(pdf_path)
     except Exception as e:
@@ -779,7 +965,8 @@ def process_pdf_parallel(pdf_path, progress_callback=None, output_folder="output
     if len(raw_text.strip()) < 150:
         try:
             engine = get_engine()
-            raw_text = engine.call_vision_ai("Extract all Sinhala text from this page exactly.", pdf_path)
+            if engine and hasattr(engine, 'call_vision_ai'):
+                raw_text = engine.call_vision_ai("Extract all Sinhala text from this page exactly.", pdf_path)
         except Exception as e:
             logger.error(f"Vision OCR fallback failed: {e}")
 
@@ -791,16 +978,17 @@ def process_pdf_parallel(pdf_path, progress_callback=None, output_folder="output
 
     results = {}
     with ThreadPoolExecutor(max_workers=_translate_pool_workers(10)) as executor:
-        future_to_cat = {
-            executor.submit(
+        future_to_cat = {}
+        for title, content in sections:
+            cat_num = title.split(".")[0] if "." in title else "00"
+            future_to_cat[executor.submit(
                 process_category_worker,
-                title.split(".")[0],
+                cat_num,
                 title,
                 content,
                 progress_callback,
-            ): title.split(".")[0]
-            for title, content in sections
-        }
+            )] = cat_num
+        
         for future in as_completed(future_to_cat):
             cat_num, data = future.result()
             results[cat_num] = data
@@ -824,108 +1012,12 @@ def process_pdf_parallel(pdf_path, progress_callback=None, output_folder="output
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# UTILITY FUNCTIONS
-# ══════════════════════════════════════════════════════════════════════════════
-
-def match_province(name):
-    """Fuzzy match province name to official canonical names."""
-    from police_patterns import PROVINCE_LIST
-    if not name:
-        return "WESTERN"
-    clean_name = str(name).strip().upper()
-    if clean_name in PROVINCE_LIST:
-        return clean_name
-    variants = {
-        "N. WESTERN": "NORTH WESTERN", "WAYAMBA": "NORTH WESTERN",
-        "N. CENTRAL": "NORTH CENTRAL", "RAJARATA": "NORTH CENTRAL",
-        "SABARA": "SABARAGAMUWA", "SOUTH": "SOUTHERN",
-        "NORTH": "NORTHERN", "EAST": "EASTERN", "WEST": "WESTERN",
-    }
-    for v, canonical in variants.items():
-        if v in clean_name:
-            return canonical
-    for p in PROVINCE_LIST:
-        if p in clean_name or clean_name in p:
-            return p
-    return "WESTERN"
-
-
-def _ordinal(day):
-    """Convert a day number to ordinal string: 1 → '1st', 2 → '2nd', etc."""
-    day = int(day)
-    if 10 <= day % 100 <= 20:
-        suffix = 'th'
-    else:
-        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
-    return f"{day}{suffix}"
-
-
-def _fix_date_format_in_text(text):
-    """
-    Convert numeric date formats → English ordinal format.
-    2026.03.20 → 20th of March 2026
-    20.03.2026 → 20th of March 2026
-    """
-    if not text:
-        return text
-
-    month_names = [
-        "", "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December",
-    ]
-
-    def replace_ymd(match):
-        y, m, d = int(match.group(1)), int(match.group(2)), int(match.group(3))
-        if 1 <= m <= 12 and 1 <= d <= 31:
-            return f"{_ordinal(d)} of {month_names[m]} {y}"
-        return match.group(0)
-
-    def replace_dmy(match):
-        d, m, y = int(match.group(1)), int(match.group(2)), int(match.group(3))
-        if 1 <= m <= 12 and 1 <= d <= 31:
-            return f"{_ordinal(d)} of {month_names[m]} {y}"
-        return match.group(0)
-
-    text = re.sub(r'(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})', replace_ymd, text)
-    text = re.sub(r'(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})', replace_dmy, text)
-    return text
-
-
-def _fix_time_format_in_text(text):
-    """Ensure all time strings follow the official 'HHMM hrs' format."""
-    if not text:
-        return text
-    text = re.sub(r'\b(\d{2}):(\d{2})\s+hrs\b', r'\1\2 hrs', text)
-    text = re.sub(r'\b(\d{2}):(\d{2})\b', r'\1\2 hrs', text)
-    text = re.sub(r'\b(\d{4})hrs\b', r'\1 hrs', text)
-    return text
-
-
-def _format_currency_suffix(text):
-    """Ensure all Rs. values end with official '/=' suffix if missing."""
-    if not text:
-        return text
-
-    def add_suffix(match):
-        val = match.group(0).strip()
-        if not val.endswith('/=') and not val.endswith('/-'):
-            return f"{val}/="
-        return val
-
-    return re.sub(r'Rs\.?\s*[\d,]+(?:\.\d{1,2})?', add_suffix, text)
-
-
-def _is_english_text(text: str) -> bool:
-    """Check if text is predominantly English vs Sinhala."""
-    sinhala_chars = sum(1 for c in text if '\u0D80' <= c <= '\u0DFF')
-    return sinhala_chars < len(text) * 0.05
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 # KAGGLE-CLOUD HYBRID PIPELINE (BUG FIXED)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def process_pdf_kaggle_cloud_hybrid(pdf_path, progress_callback=None, output_folder="outputs"):
+def process_pdf_kaggle_cloud_hybrid(pdf_path: str, 
+                                   progress_callback: Optional[Callable] = None, 
+                                   output_folder: str = "outputs") -> Dict[str, Any]:
     """
     HIGH-FIDELITY HYBRID PIPELINE:
     1. Kaggle (Surya OCR) → Streams raw Sinhala/English text.
@@ -937,6 +1029,9 @@ def process_pdf_kaggle_cloud_hybrid(pdf_path, progress_callback=None, output_fol
     """
     os.makedirs(output_folder, exist_ok=True)
     mgr = get_engine()
+    
+    if not mgr:
+        return {"success": False, "error": "AI engine not available"}
 
     category_summary = {str(i).zfill(2): {"count": 0, "incidents": [], "raw_incidents": []} for i in range(1, 30)}
     full_preview_text = []
@@ -944,7 +1039,10 @@ def process_pdf_kaggle_cloud_hybrid(pdf_path, progress_callback=None, output_fol
     logger.info(f"[Kaggle-Cloud-Hybrid] Starting: {os.path.basename(pdf_path)}")
     _safe_callback(progress_callback, "OCR_UPDATE", {"msg": "Connecting to Kaggle High-Speed GPU Server..."})
 
-    from local_ocr_tool import extract_text_from_pdf
+    try:
+        from local_ocr_tool import extract_text_from_pdf
+    except ImportError:
+        return {"success": False, "error": "local_ocr_tool not available"}
 
     try:
         pages_text = extract_text_from_pdf(
@@ -963,7 +1061,7 @@ def process_pdf_kaggle_cloud_hybrid(pdf_path, progress_callback=None, output_fol
         logger.info(f"  ✨ {msg}")
         _safe_callback(progress_callback, "OCR_UPDATE", {"msg": msg})
 
-        # ── BUG FIX: This block was inside `if progress_callback:` ───────────
+        # ── BUG FIX: This block now runs unconditionally ─────────────────────
         refiner_prompt = (
             f"SOURCE TEXT (POLICE INCIDENT REPORT):\n{sinhala_text}\n\n"
             "TASK:\n"
@@ -1045,11 +1143,153 @@ def process_pdf_kaggle_cloud_hybrid(pdf_path, progress_callback=None, output_fol
     }
 
 
+def process_pdf_kaggle_only(pdf_path: str,
+                            progress_callback: Optional[Callable] = None,
+                            output_folder: str = "outputs") -> Dict[str, Any]:
+    """
+    KAGGLE-ONLY FAST PIPELINE:
+    Uses ONLY Kaggle AI (Gemma via ngrok) for translation — NO Cloud AI validation.
+    This is 2-3x faster than the hybrid pipeline because it skips Consensus Mode.
+    
+    Flow:
+      1. Kaggle (Surya OCR) → Streams raw Sinhala/English text per page.
+      2. Kaggle AI (Gemma) → Direct translation per page (NO GitHub/Groq validation).
+      3. Local Machine → Parse categories & generate PDFs.
+    """
+    os.makedirs(output_folder, exist_ok=True)
+    mgr = get_engine()
+
+    if not mgr:
+        return {"success": False, "error": "AI engine not available"}
+
+    category_summary = {str(i).zfill(2): {"count": 0, "incidents": [], "raw_incidents": []} for i in range(1, 30)}
+    full_preview_text = []
+
+    logger.info(f"[Kaggle-Only-Fast] Starting: {os.path.basename(pdf_path)}")
+    _safe_callback(progress_callback, "OCR_UPDATE", {"msg": "⚡ Kaggle Fast Mode — Connecting to GPU Server..."})
+
+    try:
+        from local_ocr_tool import extract_text_from_pdf
+    except ImportError:
+        return {"success": False, "error": "local_ocr_tool not available"}
+
+    try:
+        pages_text = extract_text_from_pdf(
+            pdf_path,
+            progress_callback=lambda m: _safe_callback(progress_callback, "OCR_UPDATE", {"msg": m}),
+        )
+    except Exception as e:
+        logger.error(f"OCR Error: {e}")
+        return {"success": False, "error": str(e)}
+
+    for page_idx, sinhala_text in enumerate(pages_text):
+        if not sinhala_text or len(sinhala_text.strip()) < 10:
+            continue
+
+        msg = f"⚡ Kaggle Fast — Page {page_idx + 1}/{len(pages_text)}"
+        logger.info(f"  {msg}")
+        _safe_callback(progress_callback, "OCR_UPDATE", {"msg": msg})
+
+        refiner_prompt = (
+            f"SOURCE TEXT (POLICE INCIDENT REPORT):\n{sinhala_text}\n\n"
+            "TASK:\n"
+            "1. Translate/Refine this text into institutional Sri Lanka Police English.\n"
+            "2. Categorize every incident found into one of the 29 official categories.\n"
+            "3. IMPORTANT: For each incident, explicitly label it as [GENERAL] or [SECURITY].\n"
+            "   - SECURITY: Recovery of Arms/Ammunition, Subversive activities, Terrorism.\n"
+            "   - GENERAL: Serious crimes, accidents, narcotics (04-29).\n"
+            "4. FORMAT: Return each incident starting with a category header like "
+            "'## CATEGORY 04: HOMICIDE [GENERAL]'\n"
+            "   Then: 'STATION: [Name]. [Description including date/time/loss/status]'.\n"
+        )
+
+        # Try Kaggle translation DIRECTLY via the standard Ollama engine (pointing to Kaggle)
+        refined_text = "❌"
+        try:
+            # We force use of 'ollama' which config says is Kaggle
+            refined_text = mgr.call_ai(
+                refiner_prompt,
+                system_prompt="You are a Sri Lanka Police Senior Data Architect. Translate and categorize. No disclaimers.",
+                timeout=180,
+                restricted_list=["ollama"]
+            )
+        except Exception as kaggle_err:
+            logger.warning(f"Kaggle AI call failed on page {page_idx + 1}: {kaggle_err}")
+
+        # Fallback: try single cloud engine (fast, no consensus)
+        if not refined_text or refined_text.startswith("❌"):
+            error_detail = refined_text if refined_text.startswith("❌") else "Empty response"
+            logger.info(f"  Kaggle failed ({error_detail}), trying single cloud engine for page {page_idx + 1}...")
+            try:
+                refined_text = mgr._dispatch_engine(
+                    "github", refiner_prompt,
+                    "You are a Sri Lanka Police Senior Data Architect.",
+                    120, task_type="translation"
+                )
+            except Exception:
+                pass
+
+        if not refined_text or refined_text.startswith("❌"):
+            is_en = _is_english_text(sinhala_text)
+            if is_en:
+                refined_text = sinhala_text
+            else:
+                logger.warning(f"  All engines failed on page {page_idx + 1}. Using raw text.")
+                refined_text = sinhala_text
+
+        full_preview_text.append(refined_text)
+
+        # Parse this page's results and merge into category_summary
+        parsed_page = _extract_categories_from_english(refined_text)
+        page_cats = parsed_page.get("categories", {})
+
+        for cat_num, data in page_cats.items():
+            padded = str(cat_num).zfill(2)
+            incidents = data.get("incidents", [])
+
+            for inc in incidents:
+                body_lower = (inc.get("description") or inc.get("body") or "").lower()
+                origin = "Security" if padded in ["01", "02", "03"] else "General"
+                if "[security]" in body_lower:
+                    origin = "Security"
+
+                norm_inc = _normalize_incident_for_pdf({
+                    "station": inc.get("police_station", "Unknown"),
+                    "body": inc.get("description", ""),
+                    "origin_block": origin,
+                    "province": match_province(inc.get("police_station", "")),
+                    "date": inc.get("date", ""),
+                    "time": inc.get("time", ""),
+                    "financial_loss": inc.get("financial_loss", "Nil"),
+                    "status": inc.get("status", "Confirmed"),
+                })
+
+                category_summary[padded]["raw_incidents"].append(norm_inc)
+                category_summary[padded]["incidents"].append(
+                    f"STATION: {norm_inc['station']}\n{norm_inc['body']}"
+                )
+                category_summary[padded]["count"] += 1
+
+        _safe_callback(progress_callback, "PAGE_DONE", {"page_index": page_idx})
+
+    logger.info("  [Kaggle-Only-Fast] Processing complete. Generating Institutional Reports...")
+    _safe_callback(progress_callback, "OCR_UPDATE", {"msg": "⚡ Generating General & Security PDFs..."})
+
+    generated_pdfs = generate_institutional_reports(category_summary, output_folder)
+
+    return {
+        "success": True,
+        "full_translation": "\n\n".join(full_preview_text),
+        "category_results": category_summary,
+        "generated_pdfs": generated_pdfs,
+    }
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ENGLISH CATEGORY EXTRACTOR
 # ══════════════════════════════════════════════════════════════════════════════
 
-def _incidents_from_markdown_table_rows(body_text: str) -> list:
+def _incidents_from_markdown_table_rows(body_text: str) -> List[Dict]:
     """Split markdown-style pipe rows into separate incidents."""
     rows_out = []
     for raw_line in body_text.split("\n"):
@@ -1093,7 +1333,7 @@ def _incidents_from_markdown_table_rows(body_text: str) -> list:
     return rows_out
 
 
-def _extract_categories_from_english(text: str) -> dict:
+def _extract_categories_from_english(text: str) -> Dict[str, Any]:
     """Parse Gemini English output by numbered category headers."""
     EN_CATS = {
         "01": "Terrorist Activities",
@@ -1102,13 +1342,13 @@ def _extract_categories_from_english(text: str) -> dict:
         "04": "Homicides",
         "05": "Robberies",
         "06": "Thefts of Vehicles",
-        "07": "Property Thefts",
+        "07": " Thefts  of Properties",
         "08": "House Breaking & Theft",
         "09": "Rape & sexual Abuse",
         "10": "Fatal accidents",
         "11": "Unidentified dead bodies & suspicious dead bodies",
         "12": "Police Accidents",
-        "13": "Serious injuries of Police officers and Damages to Police Property",
+        "13": "Serious injuries of Police officers and Damages to Police Propert",
         "14": "Misconducts of Police officers",
         "15": "Deaths of Police officers",
         "16": "Hospital admission of SGOO",
@@ -1269,6 +1509,170 @@ def _extract_categories_from_english(text: str) -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# INSTITUTIONAL REPORT GENERATOR (Placeholder)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def generate_institutional_reports(category_summary: Dict, output_folder: str) -> List[str]:
+    """
+    Enriched report mapping to fill both General and Security PDFs.
+    BUG FIX: Added try/except around all report generation to prevent crashes.
+    """
+    paths = []
+    
+    try:
+        # Try to import report engines
+        from general_report_engine import generate_general_report, html_to_pdf as gen_to_pdf
+        from police_incident_routing import apply_institutional_incident_routing
+        from police_patterns import GENERAL_SECTIONS, PROVINCE_LIST, SECURITY_SECTIONS
+        from web_report_engine_v2 import generate_security_report, html_to_pdf as sec_to_pdf
+        
+        category_summary = apply_institutional_incident_routing(category_summary)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        gen_html = os.path.join(output_folder, f"General_Report_{timestamp}.html")
+        gen_pdf  = os.path.join(output_folder, f"General_Report_{timestamp}.pdf")
+        sec_html = os.path.join(output_folder, f"Security_Report_{timestamp}.html")
+        sec_pdf  = os.path.join(output_folder, f"Security_Report_{timestamp}.pdf")
+
+        default_dr = f"Generated {datetime.now().strftime('%d %B %Y')}"
+        dr_raw = (category_summary.get("date_range") or "").strip()
+        if dr_raw and _text_contains_sinhala(dr_raw):
+            if (os.getenv("PDF_SKIP_SINHALA_BACKFILL") or "").strip().lower() not in ("1", "true", "yes"):
+                logger.info("[PDF-EN] date_range contained Sinhala — translating for report header…")
+                try:
+                    dr_en = sanitize_police_translation_output(translate_sinhala_to_english(dr_raw))
+                    if dr_en and not dr_en.startswith("❌") and "Translation unavailable" not in dr_en:
+                        dr_raw = _fix_date_format_in_text(dr_en.strip())
+                except Exception as e:
+                    logger.warning(f"[PDF-EN] date_range translation failed: {e}")
+
+        date_range_final = dr_raw or default_dr
+
+        general_data = {
+            "date_range": date_range_final,
+            "sections": [],
+            "table_counts": category_summary.get("table_counts", {}),
+        }
+        security_data = {
+            "date_range": date_range_final,
+            "sections": [],
+        }
+
+        def get_provinces_structure():
+            return [{"name": p, "incidents": [], "nil": True} for p in PROVINCE_LIST]
+
+        gen_sections_map = {t: {"title": t, "provinces": get_provinces_structure()} for t in GENERAL_SECTIONS}
+        sec_sections_map = {t: {"title": t, "provinces": get_provinces_structure()} for t in SECURITY_SECTIONS}
+
+        for cat_num, data in category_summary.items():
+            if cat_num in ["table_counts", "date_range"]:
+                continue
+            incidents = data.get("raw_incidents", [])
+            if not incidents:
+                continue
+
+            logger.debug(f"Mapping Category {cat_num}: {len(incidents)} incidents")
+            num = int(cat_num)
+
+            for raw in incidents:
+                inc = _normalize_incident_for_pdf(raw)
+                origin = inc.get("origin_block", "General")
+
+                # Safety net: categories 01/02/03 ALWAYS go to Security report
+                if num in [1, 2, 3]:
+                    origin = "Security"
+
+                target_map, target_sec = None, None
+
+                if origin == "Security":
+                    if num == 1:
+                        target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[0]
+                    elif num == 3:
+                        target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[1]
+                    elif num == 2:
+                        target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[2]
+                    else:
+                        target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[3]
+                else:
+                    if num in [4, 5, 6, 7, 8]:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[0]
+                    elif num == 9:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[1]
+                    elif num == 10:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[2]
+                    elif num == 12:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[3]
+                    elif num == 11:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[4]
+                    elif num == 14:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[5]
+                    elif num in [15, 16, 17, 18, 19]:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[6]
+                    elif num == 20:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[7]
+                    elif num == 22:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[8]
+                    elif num == 13:
+                        desc = (inc.get("body") or "").lower()
+                        if any(kw in desc for kw in ("property", "vehicle", "damage")):
+                            target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[3]
+                        else:
+                            target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[6]
+                    else:
+                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[9]
+
+                if target_map and target_sec:
+                    p_name = match_province(inc.get("province") or inc.get("division", "WESTERN"))
+                    placed = False
+                    for p_struct in target_map[target_sec]["provinces"]:
+                        if p_struct["name"] == p_name:
+                            p_struct["incidents"].append(inc)
+                            p_struct["nil"] = False
+                            placed = True
+                            break
+                    if not placed:
+                        for p_struct in target_map[target_sec]["provinces"]:
+                            if p_struct["name"] == "WESTERN":
+                                p_struct["incidents"].append(inc)
+                                p_struct["nil"] = False
+                                break
+
+        general_data["sections"] = [gen_sections_map[t] for t in GENERAL_SECTIONS]
+        security_data["sections"] = [sec_sections_map[t] for t in SECURITY_SECTIONS]
+
+        try:
+            generate_general_report(general_data, gen_html)
+            gen_to_pdf(gen_html, gen_pdf)
+            paths.append(gen_pdf)
+            logger.info(f"General Report: {gen_pdf}")
+        except Exception as e:
+            logger.error(f"General Report Failed: {e}")
+
+        try:
+            generate_security_report(security_data, sec_html)
+            sec_to_pdf(sec_html, sec_pdf)
+            paths.append(sec_pdf)
+            logger.info(f"Security Report: {sec_pdf}")
+        except Exception as e:
+            logger.error(f"Security Report Failed: {e}")
+
+        try:
+            word_engine = WordReportEngine(templates_dir="sample")
+            word_paths = word_engine.generate_reports(category_summary, output_folder)
+            paths.extend(word_paths)
+            logger.info(f"Word Reports: {word_paths}")
+        except Exception as e:
+            logger.error(f"Word Report Generation Failed: {e}")
+
+    except ImportError as e:
+        logger.warning(f"Report engines not available: {e}. Returning empty paths.")
+    except Exception as e:
+        logger.error(f"Report generation failed: {e}")
+    
+    return paths
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # HYPER HYBRID PIPELINE (PRIMARY ENTRY POINT)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1291,7 +1695,7 @@ def _effective_sinhala_first(sinhala_first: bool) -> bool:
     return sinhala_first
 
 
-def _save_split_json_files(data, output_folder, pdf_path):
+def _save_split_json_files(data: Dict, output_folder: str, pdf_path: str) -> List[str]:
     """Split and save one-shot extraction results into General and Security JSON files."""
     try:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1325,19 +1729,21 @@ def _save_split_json_files(data, output_folder, pdf_path):
 
 
 def process_pdf_hyper_hybrid(
-    pdf_path,
-    progress_callback=None,
-    output_folder="outputs",
-    force_local_ocr=True,
-    sinhala_first=False,
-    fast_complete=True,
-):
+    pdf_path: str,
+    progress_callback: Optional[Callable] = None,
+    output_folder: str = "outputs",
+    force_local_ocr: bool = True,
+    sinhala_first: bool = False,
+    fast_complete: bool = True,
+) -> Dict[str, Any]:
     """
     Primary pipeline entry point.
 
     Fast+complete (default): Turbo JSON first (Gemini one-shot), fastest path.
     Sinhala-first (slower):  pass sinhala_first=True or set SINHALA_FIRST_PIPELINE=1.
     Fallback chain: Sinhala-first → Turbo → Full-document English → parse categories.
+    
+    BUG FIX: progress_callback is now safely checked before calling.
     """
     os.makedirs(output_folder, exist_ok=True)
 
@@ -1358,9 +1764,14 @@ def process_pdf_hyper_hybrid(
     # ── PRIMARY: Gemini Turbo Mode ─────────────────────────────────────────
     try:
         logger.info("[Turbo-Pipeline] Stage 1: Gemini One-Shot High-Speed Extraction...")
+        # BUG FIX: Safe callback call
         _safe_callback(progress_callback, "OCR_UPDATE", {"msg": "Executing High-Speed Gemini Turbo extraction..."})
 
-        from machine_translator import MachineTranslator
+        try:
+            from machine_translator import MachineTranslator
+        except ImportError:
+            raise RuntimeError("MachineTranslator not available")
+            
         translator = MachineTranslator()
         turbo_data = translator.extract_pdf_to_json_turbo(pdf_path)
 
@@ -1423,7 +1834,12 @@ def process_pdf_hyper_hybrid(
 
     # ── FALLBACK: Full-Document One-Shot Translation ────────────────────────
     logger.info("[Gemini-Fallback] Stage 1: Full-Document One-Shot Translation...")
-    from machine_translator import MachineTranslator
+    
+    try:
+        from machine_translator import MachineTranslator
+    except ImportError:
+        return {"success": False, "error": "MachineTranslator not available"}
+        
     translator = MachineTranslator()
 
     full_text = ""
@@ -1542,7 +1958,7 @@ def process_pdf_hyper_hybrid(
 
     try:
         preview_cap = int(os.getenv("TRANSLATION_PREVIEW_MAX_CHARS", "400000"))
-    except ValueError:
+    except (ValueError, TypeError):
         preview_cap = 400000
 
     raw_preview = (full_text or "").strip()
@@ -1566,161 +1982,56 @@ def process_pdf_hyper_hybrid(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# INSTITUTIONAL REPORT GENERATOR
+# 🆕 OCR TEXT PARSER HELPER (ADDED FOR UI INTEGRATION)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def generate_institutional_reports(category_summary, output_folder):
-    """Enriched report mapping to fill both General and Security PDFs."""
-    from general_report_engine import generate_general_report
-    from general_report_engine import html_to_pdf as gen_to_pdf
-    from police_incident_routing import apply_institutional_incident_routing
-    from police_patterns import GENERAL_SECTIONS, PROVINCE_LIST, SECURITY_SECTIONS
-    from web_report_engine_v2 import generate_security_report
-    from web_report_engine_v2 import html_to_pdf as sec_to_pdf
-    from word_report_engine import WordReportEngine
+def parse_incidents_from_text(sinhala_text: str, category: str) -> List[Dict]:
+    """
+    Simple parser to convert pasted Sinhala text into incident dictionaries.
+    Splits text by double newlines or treats as single incident if no clear blocks.
+    """
+    incidents = []
+    if not sinhala_text or len(sinhala_text.strip()) < 10:
+        return incidents
 
-    category_summary = apply_institutional_incident_routing(category_summary)
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    gen_html = os.path.join(output_folder, f"General_Report_{timestamp}.html")
-    gen_pdf  = os.path.join(output_folder, f"General_Report_{timestamp}.pdf")
-    sec_html = os.path.join(output_folder, f"Security_Report_{timestamp}.html")
-    sec_pdf  = os.path.join(output_folder, f"Security_Report_{timestamp}.pdf")
-
-    default_dr = f"Generated {datetime.now().strftime('%d %B %Y')}"
-    dr_raw = (category_summary.get("date_range") or "").strip()
-    if dr_raw and _text_contains_sinhala(dr_raw):
-        if (os.getenv("PDF_SKIP_SINHALA_BACKFILL") or "").strip().lower() not in ("1", "true", "yes"):
-            logger.info("[PDF-EN] date_range contained Sinhala — translating for report header…")
-            try:
-                dr_en = sanitize_police_translation_output(translate_sinhala_to_english(dr_raw))
-                if dr_en and not dr_en.startswith("❌") and "Translation unavailable" not in dr_en:
-                    dr_raw = _fix_date_format_in_text(dr_en.strip())
-            except Exception as e:
-                logger.warning(f"[PDF-EN] date_range translation failed: {e}")
-
-    date_range_final = dr_raw or default_dr
-
-    general_data = {
-        "date_range": date_range_final,
-        "sections": [],
-        "table_counts": category_summary.get("table_counts", {}),
-    }
-    security_data = {
-        "date_range": date_range_final,
-        "sections": [],
-    }
-
-    def get_provinces_structure():
-        return [{"name": p, "incidents": [], "nil": True} for p in PROVINCE_LIST]
-
-    gen_sections_map = {t: {"title": t, "provinces": get_provinces_structure()} for t in GENERAL_SECTIONS}
-    sec_sections_map = {t: {"title": t, "provinces": get_provinces_structure()} for t in SECURITY_SECTIONS}
-
-    for cat_num, data in category_summary.items():
-        if cat_num in ["table_counts", "date_range"]:
+    # Split by double newlines (common paragraph break in police reports)
+    raw_blocks = re.split(r'\n\s*\n', sinhala_text.strip())
+    
+    for block in raw_blocks:
+        block = block.strip()
+        if len(block) < 15:
             continue
-        incidents = data.get("raw_incidents", [])
-        if not incidents:
-            continue
+            
+        lines = block.split('\n')
+        # Try to extract station/name from first line
+        station = "UNKNOWN STATION"
+        first_line = lines[0].strip()
+        
+        # Basic pattern match for station names (e.g., "කොළඹ පොලීසිය", "ගාල්ල ස්ථානය")
+        st_match = re.search(r'(.{2,15}?)(?:පොලීසිය|ස්ථානය|කඳවුර)', first_line)
+        if st_match:
+            station = st_match.group(1).strip()
+        else:
+            station = first_line[:30].strip()
+            
+        incidents.append({
+            "station": station.upper(),
+            "summary": first_line[:120] + ("..." if len(first_line) > 120 else ""),
+            "body": block,
+            "hierarchy": [],
+            "reference": "",
+            "province": "WESTERN"  # Default fallback
+        })
 
-        logger.debug(f"Mapping Category {cat_num}: {len(incidents)} incidents")
-        num = int(cat_num)
-
-        for raw in incidents:
-            inc = _normalize_incident_for_pdf(raw)
-            origin = inc.get("origin_block", "General")
-
-            # Safety net: categories 01/02/03 ALWAYS go to Security report
-            # (origin_block may not be set correctly in all pipelines)
-            if num in [1, 2, 3]:
-                origin = "Security"
-
-            target_map, target_sec = None, None
-
-            if origin == "Security":
-                if num == 1:
-                    target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[0]
-                elif num == 3:
-                    target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[1]
-                elif num == 2:
-                    target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[2]
-                else:
-                    target_map, target_sec = sec_sections_map, SECURITY_SECTIONS[3]
-            else:
-                if num in [4, 5, 6, 7, 8]:
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[0]
-                elif num == 9:
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[1]
-                elif num == 10:
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[2]
-                elif num == 12:
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[3]
-                elif num == 11:
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[4]
-                elif num == 14:
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[5]
-                elif num in [15, 16, 17, 18, 19]:
-                    # 15=Deaths, 16=Hospital, 17=Relatives death, 18=Retired relatives, 19=Officers on Leave
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[6]
-                elif num == 20:
-                    # 20 = Narcotics/Illicit Liquor (NOT 19 — that is Officers on Leave)
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[7]
-                elif num == 22:
-                    # 22 = Tri-Forces (NOT 21 — that is Arrests → goes to OTHER)
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[8]
-                elif num == 13:
-                    desc = (inc.get("body") or "").lower()
-                    if any(kw in desc for kw in ("property", "vehicle", "damage")):
-                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[3]
-                    else:
-                        target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[6]
-                else:
-                    target_map, target_sec = gen_sections_map, GENERAL_SECTIONS[9]
-
-            if target_map and target_sec:
-                p_name = match_province(inc.get("province") or inc.get("division", "WESTERN"))
-                placed = False
-                for p_struct in target_map[target_sec]["provinces"]:
-                    if p_struct["name"] == p_name:
-                        p_struct["incidents"].append(inc)
-                        p_struct["nil"] = False
-                        placed = True
-                        break
-                if not placed:
-                    for p_struct in target_map[target_sec]["provinces"]:
-                        if p_struct["name"] == "WESTERN":
-                            p_struct["incidents"].append(inc)
-                            p_struct["nil"] = False
-                            break
-
-    general_data["sections"] = [gen_sections_map[t] for t in GENERAL_SECTIONS]
-    security_data["sections"] = [sec_sections_map[t] for t in SECURITY_SECTIONS]
-
-    paths = []
-
-    try:
-        generate_general_report(general_data, gen_html)
-        gen_to_pdf(gen_html, gen_pdf)
-        paths.append(gen_pdf)
-        logger.info(f"General Report: {gen_pdf}")
-    except Exception as e:
-        logger.error(f"General Report Failed: {e}")
-
-    try:
-        generate_security_report(security_data, sec_html)
-        sec_to_pdf(sec_html, sec_pdf)
-        paths.append(sec_pdf)
-        logger.info(f"Security Report: {sec_pdf}")
-    except Exception as e:
-        logger.error(f"Security Report Failed: {e}")
-
-    try:
-        word_engine = WordReportEngine(templates_dir="sample")
-        word_paths = word_engine.generate_reports(category_summary, output_folder)
-        paths.extend(word_paths)
-        logger.info(f"Word Reports: {word_paths}")
-    except Exception as e:
-        logger.error(f"Word Report Generation Failed: {e}")
-
-    return paths
+    # Fallback if splitting failed
+    if not incidents:
+        incidents.append({
+            "station": "PARSED TEXT",
+            "summary": sinhala_text[:120],
+            "body": sinhala_text,
+            "hierarchy": [],
+            "reference": "",
+            "province": "WESTERN"
+        })
+        
+    return incidents

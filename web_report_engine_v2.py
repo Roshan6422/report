@@ -1,14 +1,10 @@
 """
 web_report_engine_v2.py — 100% Pixel-Perfect Security Situation Report Generator
-==================================================================================
 Matches the official sample EXACTLY: fonts, spacing, layout, formatting.
-
 Based on official sample dated 17th-18th March 2026
 """
-
 import os
 import re
-
 from institutional_report_pdf import (
     build_institutional_html_document,
     build_report_header,
@@ -18,21 +14,17 @@ from institutional_report_pdf import (
     sanitize_html_for_pdf,
     signature_report_date_string,
 )
-
-PAGE_TEMPLATE = """<div class="page">
-    <div class="page-num">{{ PAGE_NUM }}</div>
-    {{ CONTENT }}
-</div>"""
-
-
 import html as html_module
 
+PAGE_TEMPLATE = """
+{{ PAGE_NUM }}
+{{ CONTENT }}
+"""
 
 def extract_hierarchy(hierarchy_data):
     """Extract DIG District and Division exactly as shown in sample."""
     dig_district = ""
     division = ""
-
     if isinstance(hierarchy_data, list):
         for p in hierarchy_data:
             p_clean = str(p).strip()
@@ -55,16 +47,14 @@ def extract_hierarchy(hierarchy_data):
 
     return dig_district, division
 
-
 def render_markdown_tables(text):
     """Simple regex-based markdown table to HTML converter."""
     if "|" not in text or "---" not in text:
         return html_module.escape(text).replace("\n", "<br>")
-
+    
     lines = text.strip().split("\n")
     html = ""
     table_started = False
-
     current_text_block = []
 
     for line in lines:
@@ -98,7 +88,6 @@ def build_incident_html(inc):
     station_raw = str(inc.get("station", "")).strip()
     station = re.sub(r'\s*(?:POLICE\s*)?STATION\s*$', '', station_raw, flags=re.IGNORECASE)
     station = station.strip().upper()
-
     summary = str(inc.get("summary", "")).strip()
     body = str(inc.get("body", "")).strip()
     hierarchy = inc.get("hierarchy", "")
@@ -130,14 +119,12 @@ def build_incident_html(inc):
         f'</div>'
     )
 
-
 def build_section_html(sec):
     """Build section HTML with support for showing all provinces with Nil.
-    
     Note: Security Report format shows "Nil" on same line as section header,
     not indented below like General Report.
     """
-    title = str(sec.get("title", ""))
+    title = str(sec.get("title", "")).strip()
     provinces = sec.get("provinces", [])
 
     # Check if section has any incidents
@@ -154,15 +141,15 @@ def build_section_html(sec):
         incs = p.get("incidents", [])
         is_nil = p.get("nil", False)
 
-        # Province heading format: "S/DIG  PROVINCE_NAME"
+        # Province heading format: "S/DIG PROVINCE_NAME"
         province_name = p["name"].upper()
         if "PROVINCE" not in province_name:
             province_name += " PROVINCE"
 
         if is_nil or not incs:
-            continue # Skip rendering this province completely
+            continue  # Skip rendering this province completely
 
-        html += f'<div class="province-heading">S/DIG  {province_name}</div>'
+        html += f'<div class="province-heading">S/DIG {province_name}</div>'
 
         # Add each incident
         for i in incs:
@@ -170,10 +157,8 @@ def build_section_html(sec):
 
     return html
 
-
 def generate_security_report(data, output_path):
     """Generate Security Situation Report with 100% pixel-perfect match to official sample."""
-
     # Use security logo
     logo_filename = "security_logo.png"
     if not os.path.exists(logo_filename):
@@ -213,7 +198,7 @@ def generate_security_report(data, output_path):
     pages.append(page_dist)
 
     # Assemble full HTML (same shell + CSS as General report)
-    all_pages = "".join(pages)
+    all_pages = " ".join(pages)
     full_html = sanitize_html_for_pdf(
         build_institutional_html_document("Security Situation Report", all_pages)
     )
@@ -222,15 +207,14 @@ def generate_security_report(data, output_path):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(full_html)
 
-    print(f"✅ Security Report generated: {output_path}")
+    print(f"[Done] Security Report generated: {output_path}")
     return output_path
 
-
 def generate_general_report(data, output_path):
-    """Generate General Situation Report with 29-category summary table."""
+    """Generate General Situation Report with 28-category summary table."""
     logo_filename = "police_logo.png"
     logo_path = "file:///" + os.path.abspath(logo_filename).replace("\\", "/")
-
+    
     # 1. Body content
     content_html = ""
     for sec in data.get("sections", []):
@@ -268,15 +252,14 @@ def generate_general_report(data, output_path):
 
     pages.extend([p1, p2, p3])
     full_html = sanitize_html_for_pdf(
-        build_institutional_html_document("General Situation Report", "".join(pages))
+        build_institutional_html_document("General Situation Report", " ".join(pages))
     )
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(full_html)
 
-    print(f"✅ General Report generated: {output_path}")
+    print(f"[Done] General Report generated: {output_path}")
     return output_path
-
 
 if __name__ == "__main__":
     # Test with sample data
@@ -319,7 +302,7 @@ if __name__ == "__main__":
                             {
                                 "station": "ADAMPAN",
                                 "summary": "Arrest of suspects along with two detonators",
-                                "body": "On the 17th of March 2026, officers of the Navy attached to the Wedithalathivu camp arrested the following persons while sailing in a boat in the sea of Wedithalathivu area with the possession of 2 non-electric detonators. (1) A.R.J. Patric, aged 27 (2) A.F. Perera, aged 44 (3) R. Jonindan, aged 44 and (4) A.S. Pihiravo, aged 32 of Pallimune-East, Mannar. Investigations are being conducted. (CTM. 530)- M",
+                                "body": "On the 17th of March 2026, officers of the Navy attached to the Wedithalathivu camp arrested the following persons while sailing in a boat in the sea of Wedithalathivu area with the possession of 2 non-electric detonators. (1) A.R.J. Patric, aged 27 (2) A.F. Perera, aged 44 (3) R. Jonindan, aged 44 and (4) A.S. Pihiravo, aged 32 of Pallimune-East, Mannar. Investigations are being conducted. (CTM. 530)-M",
                                 "hierarchy": ["DIG Wanni District", "Mannar Div."],
                                 "ctm": "CTM. 530"
                             }
@@ -329,7 +312,7 @@ if __name__ == "__main__":
             }
         ]
     }
-
+    
     html_path = "test_security_report.html"
     pdf_path = "test_security_report.pdf"
 

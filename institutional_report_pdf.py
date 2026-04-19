@@ -11,12 +11,16 @@ import pdfkit
 
 # 100% Pixel-Perfect Institutional CSS
 INSTITUTIONAL_REPORT_CSS = """
+        @font-face {
+            font-family: 'Noto Sans Sinhala';
+            src: url('file:///{{ FONT_PATH }}');
+        }
         @page {
             size: A4;
             margin: 0;
         }
         body {
-            font-family: 'Times New Roman', Times, serif;
+            font-family: 'Noto Sans Sinhala', 'Times New Roman', Times, serif;
             margin: 0;
             padding: 0;
             background-color: transparent;
@@ -45,11 +49,12 @@ INSTITUTIONAL_REPORT_CSS = """
             font-family: Calibri, sans-serif;
             font-weight: bold;
             font-size: 11.04pt;
+            z-index: 1000; /* Ensure it stays above everything */
         }
         .header { position: relative; width: 100%; height: 342.68pt; }
         .confidential {
             position: absolute;
-            top: 83.57pt;
+            top: 82.07pt;
             left: 0;
             width: 100%;
             text-align: center;
@@ -60,76 +65,79 @@ INSTITUTIONAL_REPORT_CSS = """
         }
         .logo {
             position: absolute;
-            top: 124.00pt;
+            top: 102.36pt; /* EXACT match from Gold Standard coordinate analysis */
             left: 50%;
             transform: translateX(-50%);
-            width: 70pt;
+            width: 70pt;    /* EXACT match width */
             height: auto;
         }
         .ig-address {
             position: absolute;
-            top: 197.69pt;
+            top: 196.19pt;
             left: 0;
             width: 100%;
             text-align: center;
-            font-weight: normal;
+            font-weight: bold;
             font-size: 14.04pt;
             letter-spacing: -0.1 pt;
         }
         .ig-title {
-            font-weight: normal;
+            font-weight: bold;
             font-size: 14.04pt;
             margin-top: 18pt; /* Vertical space for 'Inspector General of Police' */
             text-align: center;
         }
         .report-title {
             position: absolute;
-            top: 300.44pt;
+            top: 229.09pt;
             left: 0;
             width: 100%;
             text-align: center;
-            font-size: 18.00pt;
+            font-size: 24.96pt;
             font-weight: bold;
             letter-spacing: -0.15 pt;
         }
         .date-range-box {
             position: absolute;
-            top: 322.40pt;
+            top: 262.94pt;
             left: 50%;
             transform: translateX(-50%);
-            width: 442pt;
+            width: 100%;
             text-align: center;
         }
         .date-range {
             font-weight: bold;
-            font-size: 12.00pt;
+            font-size: 14.04pt;
             text-decoration: underline;
+            text-decoration-thickness: 1.2pt; /* Thicker underline to match sample */
+            text-underline-offset: 2pt;
             letter-spacing: -0.05 pt;
         }
         .sup {
-            font-size: 0.85em;
+            font-size: 9.00pt;
             vertical-align: baseline;
             position: relative;
-            top: -0.25em;
+            top: -5.00pt;
+            font-weight: bold;
         }
         .content-container {
             position: relative;
             margin-top: 0;
-            padding: 0 42.00pt; /* Increased padding for better margins */
+            padding: 0 40.00pt 0 36.00pt;
         }
         .section-header {
             font-weight: bold;
-            font-size: 12.00pt;
-            margin-top: 10pt;
+            font-size: 14.04pt;
+            margin-top: 18pt; /* Matches gap from date range box */
             margin-bottom: 5pt;
             text-align: left;
             text-transform: uppercase;
         }
         .province-heading {
-            font-family: Calibri, sans-serif;
+            font-family: 'Times New Roman', Times, serif;
             font-weight: bold;
-            font-size: 11.04pt;
-            margin: 10pt 0 5pt 0;
+            font-size: 14.04pt;
+            margin: 10pt 0 8pt 0; /* Refined gaps based on analysis */
             text-align: center;
             text-transform: uppercase;
             width: 100%;
@@ -159,6 +167,7 @@ INSTITUTIONAL_REPORT_CSS = """
         }
         .station-name {
             font-weight: bold;
+            font-size: 14.04pt;
             text-transform: uppercase;
             margin-right: 1mm;
         }
@@ -192,19 +201,52 @@ INSTITUTIONAL_REPORT_CSS = """
             text-align: left;
             line-height: 1.3;
         }
+        .summary-title {
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: bold;
+            font-size: 14.04pt;
+            text-align: center;
+            padding-top: 100pt; /* Using padding instead of margin to prevent pushing absolute parent */
+            margin-bottom: 20pt;
+            text-transform: uppercase;
+        }
         .prov-summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 5mm 0 10mm 0;
-            font-size: 10pt;
-            border: none;
+            font-size: 12.00pt;
+            border: 0.5pt solid black;
             page-break-inside: avoid;
         }
         .prov-summary-table th, .prov-summary-table td {
-            border: none;
-            padding: 4px;
+            border: 0.5pt solid black;
+            padding: 2pt;
             text-align: center;
             vertical-align: middle;
+            height: 28pt;
+        }
+        .prov-summary-table th {
+            font-weight: bold;
+            background-color: transparent;
+        }
+        .prov-summary-table td.left-align {
+            text-align: left;
+            padding-left: 5pt;
+            font-weight: bold;
+        }
+        .header-rotated {
+            height: 160pt; /* Increased height to match official sample categories */
+            vertical-align: bottom;
+            padding-bottom: 5pt;
+        }
+        .header-rotated div {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-align: left;
+            height: 150pt; /* Explicit height for text container */
+            margin: 0 auto;
+            font-weight: bold;
+            font-size: 11.00pt; /* Slightly smaller to fit triple-line headers */
+            white-space: nowrap;
         }
         .dist-item {
             display: flex;
@@ -278,7 +320,13 @@ INSTITUTIONAL_HEADER_HTML = """<div class="header">
 </div>"""
 
 def build_institutional_html_document(doc_title: str, all_pages_html: str) -> str:
-    return HTML_DOCUMENT_SHELL.replace("{{ DOC_TITLE }}", doc_title).replace("{{ ALL_PAGES }}", all_pages_html)
+    font_path = os.path.abspath("NotoSansSinhala-Regular.ttf").replace("\\", "/")
+    return (
+        HTML_DOCUMENT_SHELL
+        .replace("{{ DOC_TITLE }}", doc_title)
+        .replace("{{ ALL_PAGES }}", all_pages_html)
+        .replace("{{ FONT_PATH }}", font_path)
+    )
 
 def build_report_header(logo_path, date_range, report_title):
     return (
@@ -408,7 +456,7 @@ def html_to_pdf(html_path, pdf_path):
             'enable-local-file-access': None
         }
         pdfkit.from_file(html_path, pdf_path, options=options, configuration=config)
-        print(f"✅ PDF generated via pdfkit: {pdf_path}")
+        print(f"[Done] PDF generated via pdfkit: {pdf_path}")
     except Exception as e:
         # Fallback to Edge if pdfkit fails
         import subprocess
@@ -435,9 +483,9 @@ def html_to_pdf(html_path, pdf_path):
             ], check=True, capture_output=True)
 
             if os.path.exists(pdf_path):
-                 print(f"✅ PDF generated via Edge: {pdf_path}")
+                 print(f"[Done] PDF generated via Edge: {pdf_path}")
             else:
                  raise RuntimeError("Edge command finished but output file not found.")
         except Exception as edge_err:
-            print(f"❌ PDF generation failed: pdfkit error: {e}")
-            print(f"❌ PDF generation failed: Edge fallback error: {edge_err}")
+            print(f"[Error] PDF generation failed: pdfkit error: {e}")
+            print(f"[Error] PDF generation failed: Edge fallback error: {edge_err}")

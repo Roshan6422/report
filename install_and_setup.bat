@@ -1,54 +1,82 @@
 @echo off
 setlocal EnableDelayedExpansion
+chcp 65001 >nul
 
 echo =========================================================
 echo    Sinhala Police Intelligence Tool - Automated Setup
 echo =========================================================
 echo.
 
+:: ── 0. Python Check ────────────────────────────────────────
+python --version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Python is not installed or not in PATH.
+    echo Please install Python 3.8+ and add to system PATH.
+    pause
+    exit /b 1
+)
+echo [OK] Python detected.
+echo.
+
+:: ── 1. Install Dependencies ────────────────────────────────
+if not exist "requirements.txt" (
+    echo [ERROR] requirements.txt not found in current directory.
+    pause
+    exit /b 1
+)
+
 echo [1/3] Installing Required Python Packages...
+python -m pip install --upgrade pip --quiet
 python -m pip install -r requirements.txt
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [ERROR] Failed to install Python dependencies. Please ensure Python is installed and added to PATH.
+    echo [ERROR] Failed to install dependencies. Check internet/connection.
     pause
-    exit /b
+    exit /b 1
 )
 echo [OK] Python dependencies installed successfully.
 echo.
 
+:: ── 2. Environment Config ──────────────────────────────────
 echo [2/3] Checking environment configuration...
 if not exist ".env" (
-    echo GEMINI_API_KEY=YOUR_GEMINI_KEY_HERE > .env
-    echo OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY_HERE >> .env
+    (
+        echo # Sinhala Police AI - Environment Configuration
+        echo GEMINI_API_KEY=YOUR_GEMINI_KEY_HERE
+        echo OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY_HERE
+        echo SINHALA_FIRST_PIPELINE=1
+        echo AI_DISPATCH_MODE=sequential
+    ) > .env
     echo [WARNING] Created a new .env file. Please edit it to add your API keys.
 ) else (
     echo [OK] .env file already exists.
 )
 echo.
 
+:: ── 3. Desktop Shortcuts (Space-Safe VBS) ─────────────────
 echo [3/3] Creating Desktop Shortcuts...
-set "VBS_SCRIPT=%temp%\CreateShortcuts.vbs"
+set "VBS_SCRIPT=%temp%\PoliceAISetup.vbs"
 set "TOOL_PATH=%CD%"
 
-:: Create VBS file to generate shortcuts
-echo Set oWS = WScript.CreateObject("WScript.Shell") > "%VBS_SCRIPT%"
-echo sLinkFile = oWS.SpecialFolders("Desktop") ^& "\Police AI Desktop.lnk" >> "%VBS_SCRIPT%"
-echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%VBS_SCRIPT%"
-echo oLink.TargetPath = "%TOOL_PATH%\run_desktop.bat" >> "%VBS_SCRIPT%"
-echo oLink.WorkingDirectory = "%TOOL_PATH%" >> "%VBS_SCRIPT%"
-echo oLink.Description = "Police AI Fast Report Generator" >> "%VBS_SCRIPT%"
-:: You can add an icon here if needed
-:: echo oLink.IconLocation = "%TOOL_PATH%\assets\icon.ico" >> "%VBS_SCRIPT%"
-echo oLink.Save >> "%VBS_SCRIPT%"
-
-echo sLinkFile2 = oWS.SpecialFolders("Desktop") ^& "\Unified Manual Assistant.lnk" >> "%VBS_SCRIPT%"
-echo Set oLink2 = oWS.CreateShortcut(sLinkFile2) >> "%VBS_SCRIPT%"
-echo oLink2.TargetPath = "pythonw.exe" >> "%VBS_SCRIPT%"
-echo oLink2.Arguments = "unified_manual_assistant.py" >> "%VBS_SCRIPT%"
-echo oLink2.WorkingDirectory = "%TOOL_PATH%" >> "%VBS_SCRIPT%"
-echo oLink2.Description = "Police Unified Manual HUD" >> "%VBS_SCRIPT%"
-echo oLink2.Save >> "%VBS_SCRIPT%"
+:: Use """ to safely quote paths containing spaces in VBS
+(
+    echo Set oWS = WScript.CreateObject("WScript.Shell")
+    echo.
+    echo sLinkFile = oWS.SpecialFolders("Desktop") ^& "\Police AI Desktop.lnk"
+    echo Set oLink = oWS.CreateShortcut(sLinkFile)
+    echo oLink.TargetPath = """%TOOL_PATH%\run_desktop.bat"""
+    echo oLink.WorkingDirectory = """%TOOL_PATH%"""
+    echo oLink.Description = "Police AI Fast Report Generator"
+    echo oLink.Save
+    echo.
+    echo sLinkFile2 = oWS.SpecialFolders("Desktop") ^& "\Unified Manual Assistant.lnk"
+    echo Set oLink2 = oWS.CreateShortcut(sLinkFile2)
+    echo oLink2.TargetPath = "pythonw.exe"
+    echo oLink2.Arguments = """%TOOL_PATH%\unified_manual_assistant.py"""
+    echo oLink2.WorkingDirectory = """%TOOL_PATH%"""
+    echo oLink2.Description = "Police Unified Manual HUD"
+    echo oLink2.Save
+) > "%VBS_SCRIPT%"
 
 cscript /nologo "%VBS_SCRIPT%"
 del "%VBS_SCRIPT%"
@@ -56,7 +84,7 @@ del "%VBS_SCRIPT%"
 echo [OK] Shortcuts created on your Desktop.
 echo.
 echo =========================================================
-echo    Setup Complete! 
+echo    ✅ Setup Complete! 
 echo    You can now launch the application from your Desktop.
 echo =========================================================
 pause

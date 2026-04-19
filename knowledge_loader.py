@@ -10,7 +10,6 @@ class ExpertKnowledgeLoader:
 
     def _load_knowledge(self):
         if not os.path.exists(self.jsonl_path):
-            print(f"  [Knowledge] ⚠️ Knowledge file not found at {self.jsonl_path}")
             return
 
         try:

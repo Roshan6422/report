@@ -28,7 +28,7 @@ FAST_MODE      = os.getenv("OCR_FAST", "0") == "1"        # skip multi-PSM votin
 
 # Load defaults, then override with config.json if available
 _cfg = get_config()
-_kaggle_url_default = "https://nestable-mireya-uncarbonized.ngrok-free.dev/gpu-ocr"
+_kaggle_url_default = "https://murkiness-ethanol-defiling.ngrok-free.dev/gpu-ocr"
 if _cfg:
     _ollama_cfg = _cfg.get("ai_engines", {}).get("ollama", {})
     if _ollama_cfg.get("kaggle_url"):

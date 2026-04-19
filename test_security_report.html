@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Security Situation Report</title>
+    <style>
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            font-size: 12.00pt;
+            color: black;
+            line-height: 1.32;
+        }
+        .page {
+            width: 595.32pt;
+            min-height: 841.92pt;
+            padding: 0;
+            margin: 0 auto;
+            background: transparent;
+            position: relative;
+            box-sizing: border-box;
+            border: none;
+            box-shadow: none;
+            page-break-after: always;
+        }
+        .page-num {
+            position: absolute;
+            top: 38.00pt;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: Calibri, sans-serif;
+            font-weight: bold;
+            font-size: 11.04pt;
+            z-index: 1000; /* Ensure it stays above everything */
+        }
+        .header { position: relative; width: 100%; height: 342.68pt; }
+        .confidential {
+            position: absolute;
+            top: 82.07pt;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14.04pt;
+            text-transform: capitalize;
+            letter-spacing: -0.1 pt;
+        }
+        .logo {
+            position: absolute;
+            top: 102.36pt; /* EXACT match from Gold Standard coordinate analysis */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70pt;    /* EXACT match width */
+            height: auto;
+        }
+        .ig-address {
+            position: absolute;
+            top: 196.19pt;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14.04pt;
+            letter-spacing: -0.1 pt;
+        }
+        .ig-title {
+            font-weight: bold;
+            font-size: 14.04pt;
+            margin-top: 18pt; /* Vertical space for 'Inspector General of Police' */
+            text-align: center;
+        }
+        .report-title {
+            position: absolute;
+            top: 229.09pt;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 24.96pt;
+            font-weight: bold;
+            letter-spacing: -0.15 pt;
+        }
+        .date-range-box {
+            position: absolute;
+            top: 262.94pt;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            text-align: center;
+        }
+        .date-range {
+            font-weight: bold;
+            font-size: 14.04pt;
+            text-decoration: underline;
+            text-decoration-thickness: 1.2pt; /* Thicker underline to match sample */
+            text-underline-offset: 2pt;
+            letter-spacing: -0.05 pt;
+        }
+        .sup {
+            font-size: 9.00pt;
+            vertical-align: baseline;
+            position: relative;
+            top: -5.00pt;
+            font-weight: bold;
+        }
+        .content-container {
+            position: relative;
+            margin-top: 0;
+            padding: 0 40.00pt 0 36.00pt;
+        }
+        .section-header {
+            font-weight: bold;
+            font-size: 14.04pt;
+            margin-top: 18pt; /* Matches gap from date range box */
+            margin-bottom: 5pt;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        .province-heading {
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: bold;
+            font-size: 14.04pt;
+            margin: 10pt 0 8pt 0; /* Refined gaps based on analysis */
+            text-align: center;
+            text-transform: uppercase;
+            width: 100%;
+        }
+        .incident-block {
+            display: table;
+            width: 100%;
+            margin-bottom: 10pt;
+            border-bottom: none;
+            page-break-inside: avoid;
+        }
+        .dig-side {
+            width: 108.86pt;
+            padding-right: 15pt;
+            font-weight: bold;
+            font-size: 12.00pt;
+            vertical-align: top;
+            box-sizing: border-box;
+            display: table-cell;
+        }
+        .body-side {
+            width: 414.14pt;
+            vertical-align: top;
+            text-align: justify;
+            box-sizing: border-box;
+            display: table-cell;
+        }
+        .station-name {
+            font-weight: bold;
+            font-size: 14.04pt;
+            text-transform: uppercase;
+            margin-right: 1mm;
+        }
+        .case-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            margin: 10mm 0;
+        }
+        .case-table th, .case-table td {
+            border: none;
+            padding: 3px 6px;
+            font-size: 10.5pt;
+            text-align: center;
+        }
+        .case-table th {
+            font-weight: bold;
+            background: transparent;
+            border-bottom: 0.5pt solid black;
+        }
+        .case-table td.left {
+            text-align: left;
+            padding-left: 8px;
+        }
+        .sig-section {
+            margin-top: 10mm;
+            page-break-inside: avoid;
+        }
+        .sig-prepared { margin-bottom: 15mm; }
+        .sig-checked {
+            text-align: left;
+            line-height: 1.3;
+        }
+        .summary-title {
+            font-family: 'Times New Roman', Times, serif;
+            font-weight: bold;
+            font-size: 14.04pt;
+            text-align: center;
+            padding-top: 100pt; /* Using padding instead of margin to prevent pushing absolute parent */
+            margin-bottom: 20pt;
+            text-transform: uppercase;
+        }
+        .prov-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.00pt;
+            border: 0.5pt solid black;
+            page-break-inside: avoid;
+        }
+        .prov-summary-table th, .prov-summary-table td {
+            border: 0.5pt solid black;
+            padding: 2pt;
+            text-align: center;
+            vertical-align: middle;
+            height: 28pt;
+        }
+        .prov-summary-table th {
+            font-weight: bold;
+            background-color: transparent;
+        }
+        .prov-summary-table td.left-align {
+            text-align: left;
+            padding-left: 5pt;
+            font-weight: bold;
+        }
+        .header-rotated {
+            height: 160pt; /* Increased height to match official sample categories */
+            vertical-align: bottom;
+            padding-bottom: 5pt;
+        }
+        .header-rotated div {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            text-align: left;
+            height: 150pt; /* Explicit height for text container */
+            margin: 0 auto;
+            font-weight: bold;
+            font-size: 11.00pt; /* Slightly smaller to fit triple-line headers */
+            white-space: nowrap;
+        }
+        .dist-item {
+            display: flex;
+            margin-bottom: 2pt;
+            font-size: 11pt;
+        }
+        .dist-num {
+            width: 35pt;
+            flex-shrink: 0;
+            text-align: right;
+            padding-right: 10pt;
+        }
+        .dist-name {
+            flex-grow: 1;
+        }
+        
+        /* Markdown Table Styling */
+        .body-side table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5pt 0;
+            font-size: 10.5pt;
+        }
+        .body-side table th, .body-side table td {
+            border: 0.5pt solid #888;
+            padding: 3pt 5pt;
+            text-align: left;
+        }
+        .body-side table th {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { background: white; }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="no-print"><button onclick="window.print()" style="padding:10px 20px; cursor:pointer; background:#333; color:white; border-radius:5px; font-weight:bold;">Print / Save as PDF</button></div>
+    
+1
+<div class="header">
+    <div class="confidential">Confidential</div>
+    <img src="file:///D:/PROJECTS/pdf convert tool/security_logo.png" class="logo" alt="">
+    <div class="ig-address">
+        IG’s Command / Information Division, Mirihana, Sri Lanka.<br>
+        <span style="font-weight: normal;">Inspector General of Police.</span>
+    </div>
+    <div class="report-title">Security Situation Report</div>
+    <div class="date-range-box">
+        <span class="date-range">From 0400 hrs. on 17<span class="sup">th</span> March 2026 to 0400 hrs. on 18<span class="sup">th</span> March 2026</span>
+    </div>
+</div><div class="section-header">01. VERY IMPORTANT MATTERS OF SECURITY INTEREST: Nil</div><div class="section-header">02. SUBVERSIVE ACTIVITIES: Nil</div><div class="section-header">03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES:</div><div class="province-heading">S/DIG SABARAGAMUWA PROVINCE</div><div class="incident-block">  <div class="dig-side"><div class="dig-district"><b>DIG Ratnapura District</b></div><div class="dig-division"><b>Embilipitiya Div.</b></div></div>  <div class="body-side"><span class="station-name"><b>EMBILIPITIYA: (Arrest of suspects along with a detonator and gunpowder)</b></span> On the 17th March 2026, acting on an information received through the 1-1-9 project, police arrested a Buddhist monk named Rev. Embilipitiye Indrarathana thero, aged 68, the chief incumbent of the Sri Darshanagiri viharaya, Darshanagama, Embilipitiya and another person named N.U. Samanchandra, aged 56 of # 896, Mayuragama, Sewanagala along with an electric detonator and 80g of gunpowder, while digging a tunnel with the intention of treasure hunting in the temple premises. The suspects are scheduled to be produced before the Magistrate court, Embilipitiya on the 18th March 2026. (OTM.1421)-A</div></div><div class="incident-block">  <div class="dig-side"><div class="dig-district"><b>DIG Ratnapura District</b></div><div class="dig-division"><b>Embilipitiya Div.</b></div></div>  <div class="body-side"><span class="station-name"><b>UDAWALAWA: (Arrest of a person for possession of a firearm)</b></span> On the 17th of March 2026, police arrested a person named K.T. Ranathunga, aged 53 of #14/2 Panahaduwa, Kolombage-Ara for possession of a locally made muzzle loading firearm at Panahaduwa in Udawalawa area. Investigations are being conducted. (OTM.1445)-E</div></div><div class="province-heading">S/DIG NORTHERN PROVINCE</div><div class="incident-block">  <div class="dig-side"><div class="dig-district"><b>DIG Wanni District</b></div><div class="dig-division"><b>Mannar Div.</b></div></div>  <div class="body-side"><span class="station-name"><b>ADAMPAN: (Arrest of suspects along with two detonators)</b></span> On the 17th of March 2026, officers of the Navy attached to the Wedithalathivu camp arrested the following persons while sailing in a boat in the sea of Wedithalathivu area with the possession of 2 non-electric detonators. (1) A.R.J. Patric, aged 27 (2) A.F. Perera, aged 44 (3) R. Jonindan, aged 44 and (4) A.S. Pihiravo, aged 32 of Pallimune-East, Mannar. Investigations are being conducted. (CTM. 530)-M</div></div>
+ 
+2
+
+    <div class="sig-section">
+        <div style="text-decoration: underline; margin-top: 5mm; margin-bottom: 3mm;">
+            <span style="font-style: italic;">Signature placeholder</span>
+        </div>
+        <div class="sig-prepared">
+            Prepared by: PS 51258<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;U.G. Ajith Priyantha
+        </div>
+        <div style="text-align: center; margin-top: 10mm;">
+            <div style="text-decoration: underline; display: inline-block; margin-bottom: 3mm;">
+                <span style="font-style: italic;">Signature placeholder</span>
+            </div>
+        </div>
+        <div class="sig-checked">
+            Checked by: B.A. Sujith Ganganatha<br>
+            Chief Inspector of Police<br>
+            Duty Officer<br>
+            IG's Command & Information Division,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Mirihana<br>
+            19th April 2026
+        </div>
+    </div>
+ 
+3
+<div class="distribution" style="margin-top:0;"><div class="dist-title" style="font-weight:bold; margin-bottom:5pt;">Copies to:</div><div class="dist-item"><div class="dist-num">(i)</div><div class="dist-name">H.E. the President</div></div><div class="dist-item"><div class="dist-num">(ii)</div><div class="dist-name">Hon. Prime Minister</div></div><div class="dist-item"><div class="dist-num">(iii)</div><div class="dist-name">Hon. Speaker</div></div><div class="dist-item"><div class="dist-num">(iv)</div><div class="dist-name">Hon. Minister of Public Security</div></div><div class="dist-item"><div class="dist-num">(v)</div><div class="dist-name">Secretary to H.E the President</div></div><div class="dist-item"><div class="dist-num">(vi)</div><div class="dist-name">Secretary to Hon. Prime Minister</div></div><div class="dist-item"><div class="dist-num">(vii)</div><div class="dist-name">Secretary to the Cabinet</div></div><div class="dist-item"><div class="dist-num">(viii)</div><div class="dist-name">Secretary to the Ministry of Defence</div></div><div class="dist-item"><div class="dist-num">(ix)</div><div class="dist-name">Secretary to the Ministry of Public Security</div></div><div class="dist-item"><div class="dist-num">(x)</div><div class="dist-name">Advisor to Hon. Minister of Public Security</div></div><div class="dist-item"><div class="dist-num">(xi)</div><div class="dist-name">Chairman / Secretary to National Police Commission</div></div><div class="dist-item"><div class="dist-num">(xii)</div><div class="dist-name">Chief of Defence Staff</div></div><div class="dist-item"><div class="dist-num">(xiii)</div><div class="dist-name">Service Commanders</div></div><div class="dist-item"><div class="dist-num">(xiv)</div><div class="dist-name">SDIGG</div></div><div class="dist-item"><div class="dist-num">(xv)</div><div class="dist-name">DIGG</div></div><div class="dist-item"><div class="dist-num">(xvi)</div><div class="dist-name">Directors</div></div><div class="dist-item"><div class="dist-num">(xvii)</div><div class="dist-name">All SSP / SP Divisions (Territorial)</div></div><div class="dist-item"><div class="dist-num">(xviii)</div><div class="dist-name">All HQII & OICC (Territorial & Functional) and File</div></div></div>
+
+</body>
+</html>

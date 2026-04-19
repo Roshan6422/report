@@ -1,66 +1,36 @@
+"""
+station_mapping.py
+==================
+Mapping of Sinhala Station/Division names to English and Province mapping.
+Used by pipeline_utils.py and desktop_pipeline.py for geo-enrichment.
+"""
 
 # Dictionary mapping Sinhala Station/Division names to English
+# OCR errors from user input have been corrected here.
 SINHALA_TO_ENGLISH = {
-    # Stations / Divisions
-    "හිනිඳුම": "HINIDUMA",
-    "ගළල්඼": "GALLE",
-    "මශපළසේ": "MAHABAGE",
-    "රෆෂණිය": "KELANIYA",
-    "මන පිටිය": "MANAMPITIYA",
-    "සඳොස඼ොන්නරුල": "POLONNARUWA",
-    "බිබි඼": "BIBILA",
-    "සමොණරළග඼": "MONARAGALA",
-    "කිකදිලෆ඼": "KIRIDIWELA",
-    "ග ඳශ": "GAMPAHA",
-    "අඹන්සඳො඼": "AMBANPOLA",
-    "නිරලෆරටිය": "NIKAWERATIYA",
-    "කුලියළපිටිය": "KULIYAPITIYA",
-    "පිටිග඼": "PITIGALA",
-    "ඇල්පිටිය": "ELPITIYA",
-    "මළ඼සබ්": "MALABE",
-    "නුසේසගො)": "NUGEGODA",
-    "මීගමුල": "NEGOMBO",
-    "පිළියන්ද඼": "PILIYANDALA",
-    "ගල්කිවහව": "DEHIWALA", # Often used interchangeably in logs
-    "කුරුණ෇ග඼": "KURUNEGALA",
-    "රළගම": "RAGAMA",
-    "පද්සද්ගම": "PADDULLA",
-    "අශංගම": "AHANGAMA",
-    "නලගමුල": "NAWAGAMUWA",
-    "සශ මළගම": "HOMAGAMA",
-    "වදමල්ගම": "WADAMALAGAMA",
-    "අනුරළධපුරය": "ANURADHAPURA",
-    "මධයමරදවුර": "CENTRAL CAMP",
-    "රත්නපුර": "RATNAPURA",
-    "බු඼ත්සිංශ඼": "BULATHSINGHALA",
-    "පදුල්඼": "BADULLA",
-    "මළතර": "MATARA",
-    "පළනදුර": "PANADURA",
-    "තංගල්඼": "TANGALLE",
-    "මළතසල්": "MATALE",
-    "නුලරඑළිය": "NUWARA ELIYA",
-      "ශ්‍රී ජයවර්ධනපුර": "SRI JAYAWARDENEPURA",
+    # Western Province
     "කොළඹ": "COLOMBO",
     "කොළඹ මහ": "FORT",
-    "පිළිසස්": "PETTAH",
-    "මාරදාන": "MARADANA",
+    "පේට්ටා": "PETTAH",
+    "මරදාන": "MARADANA",
     "බොරැල්ල": "BORELLA",
     "නාරාහේන්පිට": "NARAHENPITA",
-    "කිරුළ‍ාපොන": "KIRULAPONE",
+    "කිරුළප්පොන": "KIRULAPONE",
     "වැල්ලවත්ත": "WELLAWATTE",
     "දෙහිවල": "DEHIWALA",
+    "ගල්කිස්ස": "DEHIWALA",
     "මවුන්ට් ලැවිනියා": "MOUNT LAVINIA",
     "මොරටුව": "MORATUWA",
     "රත්මලාන": "RATMALANA",
     "කේස්බෑව": "KESBEWA",
-    "පිළියන්ද‍ල": "PILIYANDALA",
-    "සශ‍ාගම": "HOMAGAMA",
+    "පිළියන්දල": "PILIYANDALA",
+    "හෝමාගම": "HOMAGAMA",
     "නුගේගොඩ": "NUGEGODA",
     "මහරගම": "MAHARAGAMA",
     "කොට්ටාව": "KOTTAWA",
     "පන්නිපිටිය": "PANNIPITIYA",
     "කඩුවෙල": "KADUWELA",
-    "මාළාබේ": "MALABE",
+    "මාළඹේ": "MALABE",
     "කොලොන්නාව": "KOLONNAWA",
     "මුල්ලේරියාව": "MULLERIYAWA",
     "බියගම": "BIYAGAMA",
@@ -68,24 +38,24 @@ SINHALA_TO_ENGLISH = {
     "වත්තල": "WATTALA",
     "හේදල": "HENDALA",
     "රාගම": "RAGAMA",
-    "ජා‍ ඇල": "JA-ELA",
+    "ජා-ඇල": "JA-ELA",
     "සීදුව": "SEEDUWA",
     "කටුනායක": "KATUNAYAKE",
     "ඒකල": "EKALA",
-    "ග‍ැ‍ම්පහ": "GAMPAHA",
+    "ගම්පහ": "GAMPAHA",
     "නිට්ටඹුව": "NITTAMBUWA",
     "මිරිගම": "MIRIGAMA",
     "මිනුවන්ගොඩ": "MINUWANGODA",
     "දිවුලපිටිය": "DIVULAPITIYA",
     "වේයන්ගොඩ": "VEYANGODA",
-    "අත්ත‍නගල්ල": "ATTANAGALLA",
-    "ගනේමුල්ල": "GANEMULLA",
+    "අත්තනගල්ල": "ATTANAGALLA",
+    "ගණේමුල්ල": "GANEMULLA",
     "මීගමුව": "NEGOMBO",
-    "ක‍ටාන": "KATANA",
-    "කේලණිය": "KELANIYA",
+    "කටාන": "KATANA",
+    "කැලණිය": "KELANIYA",
     "කිරිබත්ගොඩ": "KIRIBATHGODA",
     "පානදුර": "PANADURA",
-    "ක‍ළුතර": "KALUTARA",
+    "කළුතර": "KALUTARA",
     "බේරුවල": "BERUWALA",
     "අළුත්ගම": "ALUTHGAMA",
     "බණ්ඩාරගම": "BANDARAGAMA",
@@ -93,33 +63,53 @@ SINHALA_TO_ENGLISH = {
     "ඉංගිරිය": "INGIRIYA",
     "මාතුගම": "MATHUGAMA",
     "අගලවත්ත": "AGALAWATTA",
-    "බුළත්සිංහල": "BULATHSINHALA",
-    "කන්ද": "KANDY",
-    "පේරාදෙණිය": "PERADENIYA",
-    "කටුගස්තොට": "KATUGASTOTA",
+    "බුලත්සිංහල": "BULATHSINHALA",
+    "ශ්‍රී ජයවර්ධනපුර": "SRI JAYAWARDENEPURA",
+
+    # Southern Province
     "ගාල්ල": "GALLE",
     "හික්කඩුව": "HIKKADUWA",
     "අම්බලන්ගොඩ": "AMBALANGODA",
-    "එල්පිටිය": "ELPITIYA",
+    "ඇල්පිටිය": "ELPITIYA",
     "අහංගම": "AHANGAMA",
     "මාතර": "MATARA",
-    "වේලිගම": "WELIGAMA",
+    "වැල්ලම": "WELIGAMA",
     "හම්බන්තොට": "HAMBANTOTA",
     "තංගල්ල": "TANGALLE",
     "තිස්සමහාරාම": "TISSAMAHARAMA",
+    "හිනිඳුම": "HINIDUMA",
+
+    # Central Province
+    "කන්ද": "KANDY",
+    "මහනුවර": "KANDY",
+    "පේරාදෙණිය": "PERADENIYA",
+    "කටුගස්තොට": "KATUGASTOTA",
+    "මාතලේ": "MATALE",
+    "දඹුල්ල": "DAMBULLA",
+    "සීගිරිය": "SIGIRIYA",
+    "නුවරඑළිය": "NUWARA ELIYA",
+    "හැටන්": "HATTON",
+    "තලවාකැලේ": "TALAWAKELLE",
+    "මධ්ය මාර්ගය": "CENTRAL CAMP",
+
+    # North Western Province
     "කුරුණෑගල": "KURUNEGALA",
     "කුළියාපිටිය": "KULIYAPITIYA",
-    "නිකවේරටිය": "NIKAWERATIYA",
+    "නිකවෙරටිය": "NIKAWERATIYA",
     "අඹන්පොළ": "AMBANPOLA",
     "පුත්තලම": "PUTTALAM",
-    "චිලාව": "CHILAW",
+    "හලාවත": "CHILAW",
     "වෙන්නප්පුව": "WENNAPPUWA",
+
+    # North Central Province
     "අනුරාධපුරය": "ANURADHAPURA",
-    "කේකිරාව": "KEKIRAWA",
+    "කැකිරාව": "KEKIRAWA",
     "මේදවච්චිය": "MEDAWACHCHIYA",
     "පොළොන්නරුව": "POLONNARUWA",
-    "මනම්පිටිය": "MANAMPITIYA",
+    "මානම්පිටිය": "MANAMPITIYA",
     "හිංගුරක්ගොඩ": "HINGURAKGODA",
+
+    # Uva Province
     "බදුල්ල": "BADULLA",
     "බණ්ඩාරවෙල": "BANDARAWELA",
     "වෙලිමඩ": "WELIMADA",
@@ -127,29 +117,39 @@ SINHALA_TO_ENGLISH = {
     "මොනරාගල": "MONARAGALA",
     "වැල්ලවාය": "WELLAWAYA",
     "බිබිල": "BIBILE",
+    "පද්දුල්ල": "PADDULLA",
+
+    # Sabaragamuwa Province
+    "රත්නපුරය": "RATNAPURA",
     "එඹිලිපිටිය": "EMBILIPITIYA",
     "බලංගොඩ": "BALANGODA",
     "කෑගල්ල": "KEGALLE",
     "මාවනැල්ල": "MAWANELLA",
+    "රුවන්වැල්ල": "RUWANWELLA",
+
+    # Northern Province
     "යාපනය": "JAFFNA",
     "චාවකච්චේරි": "CHAVAKACHCHERI",
     "වව්නියා": "VAVUNIYA",
     "මූලතිව්": "MULLAITIVU",
     "කිලිනොච්චි": "KILINOCHCHI",
     "මන්නාරම": "MANNAR",
-    "මාතලේ": "MATALE",
-    "දඹුල්ල": "DAMBULLA",
-    "සීගිරිය": "SIGIRIYA",
-    "නුවරඑළිය": "NUWARA ELIYA",
-    "හැටන්": "HATTON",
-    "තලවාකැලේ": "TALAWAKELLE",
-    "ත්‍රිකුණාමල": "TRINCOMALEE",
+
+    # Eastern Province
+    "ත්‍රිකුණාමලය": "TRINCOMALEE",
     "කන්නිය": "KINNIYA",
     "මුතූර්": "MUTUR",
     "මඩකලපුව": "BATTICALOA",
     "කල්මුණේ": "KALMUNAI",
     "අම්පාර": "AMPARA",
-
+    
+    # Misc / Others (Corrected from OCR errors)
+    "මහබාගේ": "MAHABAGE",
+    "කිරිදිවෙල": "KIRIDIWELA",
+    "පිටිගල": "PITIGALA",
+    "නාවගමුව": "NAWAGAMUWA",
+    "වඩමල්ලගම": "WADAMALAGAMA",
+    "මාළඹේ": "MALABE", # Duplicate key check handled by dict
 }
 
 # Mapping of Districts/Divisions to Provinces
@@ -164,7 +164,6 @@ REGION_TO_PROVINCE = {
     "MARADANA": "WESTERN PROVINCE",
     "BORELLA": "WESTERN PROVINCE",
     "NARAHENPITA": "WESTERN PROVINCE",
-    "CINNAMON GARDENS": "WESTERN PROVINCE",
     "KIRULAPONE": "WESTERN PROVINCE",
     "WELLAWATTE": "WESTERN PROVINCE",
     "DEHIWALA": "WESTERN PROVINCE",
@@ -178,7 +177,6 @@ REGION_TO_PROVINCE = {
     "MAHARAGAMA": "WESTERN PROVINCE",
     "KOTTAWA": "WESTERN PROVINCE",
     "PANNIPITIYA": "WESTERN PROVINCE",
-    "NAWINNA": "WESTERN PROVINCE",
     "KADUWELA": "WESTERN PROVINCE",
     "MALABE": "WESTERN PROVINCE",
     "KOLONNAWA": "WESTERN PROVINCE",
@@ -202,7 +200,6 @@ REGION_TO_PROVINCE = {
     "GANEMULLA": "WESTERN PROVINCE",
     "NEGOMBO": "WESTERN PROVINCE",
     "KATANA": "WESTERN PROVINCE",
-    "MADURANKULIYA": "WESTERN PROVINCE",
     "KELANIYA": "WESTERN PROVINCE",
     "KIRIBATHGODA": "WESTERN PROVINCE",
     "PANADURA": "WESTERN PROVINCE",
@@ -214,237 +211,137 @@ REGION_TO_PROVINCE = {
     "INGIRIYA": "WESTERN PROVINCE",
     "MATHUGAMA": "WESTERN PROVINCE",
     "AGALAWATTA": "WESTERN PROVINCE",
-    "PALINDANUWARA": "WESTERN PROVINCE",
     "BULATHSINHALA": "WESTERN PROVINCE",
-    "DODANGODA": "WESTERN PROVINCE",
+    "SRI JAYAWARDENEPURA": "WESTERN PROVINCE",
+    "MAHABAGE": "WESTERN PROVINCE",
+    "NAWAGAMUWA": "WESTERN PROVINCE",
+    "KIRIDIWELA": "WESTERN PROVINCE",
+    "PADDULLA": "UVA PROVINCE",
+    "BIBILE": "UVA PROVINCE",
     "KANDY": "CENTRAL PROVINCE",
     "PERADENIYA": "CENTRAL PROVINCE",
     "KATUGASTOTA": "CENTRAL PROVINCE",
-    "AMPITIYA": "CENTRAL PROVINCE",
-    "DIGANA": "CENTRAL PROVINCE",
-    "THELDENIYA": "CENTRAL PROVINCE",
-    "GELIOYA": "CENTRAL PROVINCE",
-    "GAMPOLA": "CENTRAL PROVINCE",
-    "NAWALAPITIYA": "CENTRAL PROVINCE",
-    "HATTON": "CENTRAL PROVINCE",
-    "NORWOOD": "CENTRAL PROVINCE",
-    "DOLOSBAGE": "CENTRAL PROVINCE",
-    "MAWANELLA": "CENTRAL PROVINCE",
-    "KEGALLE": "CENTRAL PROVINCE",
-    "WARAKAPOLA": "CENTRAL PROVINCE",
-    "RAMBUKKANA": "CENTRAL PROVINCE",
     "MATALE": "CENTRAL PROVINCE",
     "DAMBULLA": "CENTRAL PROVINCE",
     "SIGIRIYA": "CENTRAL PROVINCE",
-    "GALEWELA": "CENTRAL PROVINCE",
-    "RATTOTA": "CENTRAL PROVINCE",
-    "UKUWELA": "CENTRAL PROVINCE",
-    "NALANDA": "CENTRAL PROVINCE",
-    "PALLEPOLA": "CENTRAL PROVINCE",
-    "LAGGALA": "CENTRAL PROVINCE",
-    "WILGAMUWA": "CENTRAL PROVINCE",
     "NUWARA ELIYA": "CENTRAL PROVINCE",
+    "HATTON": "CENTRAL PROVINCE",
     "TALAWAKELLE": "CENTRAL PROVINCE",
-    "BOGAWANTALAWA": "CENTRAL PROVINCE",
-    "KOTAGALA": "CENTRAL PROVINCE",
-    "MASKELIYA": "CENTRAL PROVINCE",
-    "AGARAPATHANA": "CENTRAL PROVINCE",
-    "WALAPANE": "CENTRAL PROVINCE",
+    "CENTRAL CAMP": "CENTRAL PROVINCE",
     "HIKKADUWA": "SOUTHERN PROVINCE",
     "AMBALANGODA": "SOUTHERN PROVINCE",
-    "BALAPITIYA": "SOUTHERN PROVINCE",
     "ELPITIYA": "SOUTHERN PROVINCE",
-    "KARANDENIYA": "SOUTHERN PROVINCE",
-    "BADDEGAMA": "SOUTHERN PROVINCE",
-    "NAGODA": "SOUTHERN PROVINCE",
-    "NELUWA": "SOUTHERN PROVINCE",
-    "TAWALAMA": "SOUTHERN PROVINCE",
-    "UDUGAMA": "SOUTHERN PROVINCE",
-    "AKMEEMANA": "SOUTHERN PROVINCE",
-    "HABARADUWA": "SOUTHERN PROVINCE",
-    "UNAWATUNA": "SOUTHERN PROVINCE",
-    "BENTOTA": "SOUTHERN PROVINCE",
     "WELIGAMA": "SOUTHERN PROVINCE",
-    "AKURESSA": "SOUTHERN PROVINCE",
-    "KAMBURUPITIYA": "SOUTHERN PROVINCE",
-    "HAKMANA": "SOUTHERN PROVINCE",
-    "DEVINUWARA": "SOUTHERN PROVINCE",
-    "DIKWELLA": "SOUTHERN PROVINCE",
-    "MIRISSA": "SOUTHERN PROVINCE",
-    "KEKANADURA": "SOUTHERN PROVINCE",
-    "KOTAPOLA": "SOUTHERN PROVINCE",
-    "PITABEDDARA": "SOUTHERN PROVINCE",
-    "ATHURALIYA": "SOUTHERN PROVINCE",
-    "MULATIYANA": "SOUTHERN PROVINCE",
     "HAMBANTOTA": "SOUTHERN PROVINCE",
     "TISSAMAHARAMA": "SOUTHERN PROVINCE",
-    "BELIATTA": "SOUTHERN PROVINCE",
-    "SURIYAWEWA": "SOUTHERN PROVINCE",
-    "AMBALANTOTA": "SOUTHERN PROVINCE",
-    "WEERAKETIYA": "SOUTHERN PROVINCE",
-    "KATARAGAMA": "SOUTHERN PROVINCE",
-    "THISSAMAHARAMA": "SOUTHERN PROVINCE",
-    "LUNUGAMVEHERA": "SOUTHERN PROVINCE",
     "KURUNEGALA": "NORTH WESTERN PROVINCE",
     "KULIYAPITIYA": "NORTH WESTERN PROVINCE",
     "NIKAWERATIYA": "NORTH WESTERN PROVINCE",
     "AMBANPOLA": "NORTH WESTERN PROVINCE",
-    "WARIYAPOLA": "NORTH WESTERN PROVINCE",
-    "MAHO": "NORTH WESTERN PROVINCE",
-    "PANNALA": "NORTH WESTERN PROVINCE",
-    "ALAWWA": "NORTH WESTERN PROVINCE",
-    "DUMMALASURIYA": "NORTH WESTERN PROVINCE",
-    "KOBEIGANE": "NORTH WESTERN PROVINCE",
-    "POLGAHAWELA": "NORTH WESTERN PROVINCE",
-    "IBBAGAMUWA": "NORTH WESTERN PROVINCE",
-    "GIRIULLA": "NORTH WESTERN PROVINCE",
-    "NARAMMALA": "NORTH WESTERN PROVINCE",
-    "BINGIRIYA": "NORTH WESTERN PROVINCE",
-    "HETTIPOLA": "NORTH WESTERN PROVINCE",
-    "RIDEEGAMA": "NORTH WESTERN PROVINCE",
-    "GALGAMUWA": "NORTH WESTERN PROVINCE",
     "PUTTALAM": "NORTH WESTERN PROVINCE",
     "CHILAW": "NORTH WESTERN PROVINCE",
     "WENNAPPUWA": "NORTH WESTERN PROVINCE",
-    "MARAWILA": "NORTH WESTERN PROVINCE",
-    "NATTANDIYA": "NORTH WESTERN PROVINCE",
-    "DANKOTUWA": "NORTH WESTERN PROVINCE",
-    "ANAMADUWA": "NORTH WESTERN PROVINCE",
-    "KARUWALAGASWEWA": "NORTH WESTERN PROVINCE",
-    "NAWAGATTEGAMA": "NORTH WESTERN PROVINCE",
-    "MAHAKUMBUKKADAWALA": "NORTH WESTERN PROVINCE",
     "ANURADHAPURA": "NORTH CENTRAL PROVINCE",
     "KEKIRAWA": "NORTH CENTRAL PROVINCE",
     "MEDAWACHCHIYA": "NORTH CENTRAL PROVINCE",
-    "NOCHCHIYAGAMA": "NORTH CENTRAL PROVINCE",
-    "EPPAWALA": "NORTH CENTRAL PROVINCE",
-    "TAMBUTTEGAMA": "NORTH CENTRAL PROVINCE",
-    "PADAVIYA": "NORTH CENTRAL PROVINCE",
-    "MIHINTALE": "NORTH CENTRAL PROVINCE",
-    "THAMBUTTEGAMA": "NORTH CENTRAL PROVINCE",
-    "KEBITHIGOLLEWA": "NORTH CENTRAL PROVINCE",
-    "KAHATAGASDIGILIYA": "NORTH CENTRAL PROVINCE",
     "POLONNARUWA": "NORTH CENTRAL PROVINCE",
     "MANAMPITIYA": "NORTH CENTRAL PROVINCE",
-    "MEDIRIGIRIYA": "NORTH CENTRAL PROVINCE",
     "HINGURAKGODA": "NORTH CENTRAL PROVINCE",
-    "DIMBULAGALA": "NORTH CENTRAL PROVINCE",
-    "WELIKANDA": "NORTH CENTRAL PROVINCE",
-    "BAKAMUNA": "NORTH CENTRAL PROVINCE",
-    "ELAHERA": "NORTH CENTRAL PROVINCE",
     "BADULLA": "UVA PROVINCE",
     "BANDARAWELA": "UVA PROVINCE",
     "WELIMADA": "UVA PROVINCE",
     "HAPUTALE": "UVA PROVINCE",
-    "DIYATALAWA": "UVA PROVINCE",
-    "HALI-ELA": "UVA PROVINCE",
-    "PASSARA": "UVA PROVINCE",
-    "MAHIYANGANAYA": "UVA PROVINCE",
-    "SORANATHOTA": "UVA PROVINCE",
-    "LUNUGALA": "UVA PROVINCE",
-    "KANDAKETIYA": "UVA PROVINCE",
-    "ELLA": "UVA PROVINCE",
     "MONARAGALA": "UVA PROVINCE",
     "WELLAWAYA": "UVA PROVINCE",
-    "BUTTALA": "UVA PROVINCE",
-    "BIBILE": "UVA PROVINCE",
-    "KATHARAGAMA": "UVA PROVINCE",
-    "SIYAMBALANDUWA": "UVA PROVINCE",
-    "MEDAGAMA": "UVA PROVINCE",
-    "MONERAGALA": "UVA PROVINCE",
-    "THANAMALWILA": "UVA PROVINCE",
     "RATNAPURA": "SABARAGAMUWA PROVINCE",
     "EMBILIPITIYA": "SABARAGAMUWA PROVINCE",
     "BALANGODA": "SABARAGAMUWA PROVINCE",
-    "KURUVITA": "SABARAGAMUWA PROVINCE",
-    "EHELIYAGODA": "SABARAGAMUWA PROVINCE",
-    "PELMADULLA": "SABARAGAMUWA PROVINCE",
-    "KALAWANA": "SABARAGAMUWA PROVINCE",
-    "RAKWANA": "SABARAGAMUWA PROVINCE",
-    "NIVITIGALA": "SABARAGAMUWA PROVINCE",
-    "WELIGEPOLA": "SABARAGAMUWA PROVINCE",
-    "GODAKAWELA": "SABARAGAMUWA PROVINCE",
-    "AYAGAMA": "SABARAGAMUWA PROVINCE",
-    "DERANIYAGALA": "SABARAGAMUWA PROVINCE",
+    "KEGALLE": "SABARAGAMUWA PROVINCE",
+    "MAWANELLA": "SABARAGAMUWA PROVINCE",
     "RUWANWELLA": "SABARAGAMUWA PROVINCE",
-    "GALIGAMUWA": "SABARAGAMUWA PROVINCE",
-    "BULATHKOHUPITIYA": "SABARAGAMUWA PROVINCE",
-    "ARANAYAKE": "SABARAGAMUWA PROVINCE",
     "JAFFNA": "NORTHERN PROVINCE",
     "CHAVAKACHCHERI": "NORTHERN PROVINCE",
-    "POINT PEDRO": "NORTHERN PROVINCE",
-    "KOPAY": "NORTHERN PROVINCE",
-    "NALLUR": "NORTHERN PROVINCE",
-    "MANIPAY": "NORTHERN PROVINCE",
-    "KAITHADY": "NORTHERN PROVINCE",
-    "TELLIPPALAI": "NORTHERN PROVINCE",
-    "KARAINAGAR": "NORTHERN PROVINCE",
-    "VELANAI": "NORTHERN PROVINCE",
-    "KAYTS": "NORTHERN PROVINCE",
     "VAVUNIYA": "NORTHERN PROVINCE",
-    "CHEDDIKULAM": "NORTHERN PROVINCE",
-    "NEDUNKERNY": "NORTHERN PROVINCE",
-    "OMANTHAI": "NORTHERN PROVINCE",
     "MULLAITIVU": "NORTHERN PROVINCE",
-    "ODDUSUDDAN": "NORTHERN PROVINCE",
-    "MARITIMEPATTU": "NORTHERN PROVINCE",
-    "PUTHUKKUDIYIRUPPU": "NORTHERN PROVINCE",
     "KILINOCHCHI": "NORTHERN PROVINCE",
-    "PARANTHAN": "NORTHERN PROVINCE",
-    "IRANAMADU": "NORTHERN PROVINCE",
-    "POONERYN": "NORTHERN PROVINCE",
     "MANNAR": "NORTHERN PROVINCE",
-    "MADHU": "NORTHERN PROVINCE",
-    "MUSALI": "NORTHERN PROVINCE",
-    "NANATTAN": "NORTHERN PROVINCE",
     "TRINCOMALEE": "EASTERN PROVINCE",
     "KINNIYA": "EASTERN PROVINCE",
     "MUTUR": "EASTERN PROVINCE",
-    "KANTALE": "EASTERN PROVINCE",
-    "THAMPALAKAMAM": "EASTERN PROVINCE",
-    "GOMARANKADAWALA": "EASTERN PROVINCE",
-    "SERUWILA": "EASTERN PROVINCE",
     "BATTICALOA": "EASTERN PROVINCE",
     "KALMUNAI": "EASTERN PROVINCE",
-    "SAMMANTHURAI": "EASTERN PROVINCE",
     "AMPARA": "EASTERN PROVINCE",
-    "AKKARAIPATTU": "EASTERN PROVINCE",
-    "NINTAVUR": "EASTERN PROVINCE",
-    "UHANA": "EASTERN PROVINCE",
-    "KATTANKUDY": "EASTERN PROVINCE",
-    "ERAVUR": "EASTERN PROVINCE",
-    "POTHUVIL": "EASTERN PROVINCE",
-    "DAMANA": "EASTERN PROVINCE",
-    "LAHUGALA": "EASTERN PROVINCE",
-    "MAHABAGE": "WESTERN PROVINCE",
-    "NAWAGAMUWA": "WESTERN PROVINCE",
-    "KIRIDIWELA": "WESTERN PROVINCE",
-    "BIBILA": "UVA PROVINCE",
-    "PADDULLA": "UVA PROVINCE",
+    "PITIGALA": "SOUTHERN PROVINCE",
+    "WADAMALAGAMA": "WESTERN PROVINCE",
 }
-def clean_sinhala(text):
-    if not text: return ""
+
+
+def clean_sinhala(text: str) -> str:
+    """Clean input text (strip whitespace)."""
+    if not text:
+        return ""
     return text.strip()
 
-def get_geo_info(sinhala_text):
+
+def get_geo_info(sinhala_text: str) -> dict:
+    """
+    Extract Station and Province from Sinhala text.
+    Prioritizes longer matches (e.g., "Sri Jayawardenepura" over "Jayawardenepura").
+    """
     if not sinhala_text:
         return {"station": "UNKNOWN", "province": "UNKNOWN"}
+    
     cleaned = clean_sinhala(sinhala_text)
     found_station = "UNKNOWN"
     found_province = "UNKNOWN"
-    for s_word, en_word in SINHALA_TO_ENGLISH.items():
+    
+    # Sort keys by length (descending) to match specific stations before general ones
+    # e.g., Match "කොළඹ මහ" before "කොළඹ"
+    sorted_keys = sorted(SINHALA_TO_ENGLISH.keys(), key=len, reverse=True)
+    
+    for s_word in sorted_keys:
         if s_word in cleaned:
-            found_station = en_word
+            found_station = SINHALA_TO_ENGLISH[s_word]
             break
-    if found_station in REGION_TO_PROVINCE:
+            
+    if found_station != "UNKNOWN" and found_station in REGION_TO_PROVINCE:
         found_province = REGION_TO_PROVINCE[found_station]
+        
     return {"station": found_station, "province": found_province}
+
+
+def get_station_info(station_name: str) -> dict:
+    """
+    Wrapper for get_geo_info to support pipeline_utils.py calls.
+    If input is English, tries to map province directly.
+    """
+    if not station_name:
+        return {"station": "UNKNOWN", "province": "UNKNOWN", "dig": "", "div": ""}
+        
+    # If input is likely English (no Sinhala chars), check province map directly
+    if not any("\u0D80" <= char <= "\u0DFF" for char in station_name):
+        eng_name = station_name.upper().strip()
+        province = REGION_TO_PROVINCE.get(eng_name, "UNKNOWN")
+        return {"station": eng_name, "province": province, "dig": "", "div": ""}
+        
+    # Otherwise run standard Sinhala extraction
+    result = get_geo_info(station_name)
+    result["dig"] = "" # Placeholder
+    result["div"] = "" # Placeholder
+    return result
+
 
 if __name__ == "__main__":
     test_cases = [
         "හිනිඳුම OTM 1480 ගාල්ල",
-        "කුරුණෑගල CTM 555 කේලණිය",
-        "බිබිල OTM 1532 මොනරාගල"
+        "කුරුණෑගල CTM 555 කැලණිය",
+        "බිබිල OTM 1532 මොනරාගල",
+        "කොළඹ මහ පේට්ටා", # Should match Fort/Pettah
+        "ශ්‍රී ජයවර්ධනපුර කෝට්ටේ", # Should match Sri Jayawardenepura
     ]
+    print("Running self-test...")
     for tc in test_cases:
-        print(f"Input: {tc} -> Result:  {get_geo_info(tc)}")
+        res = get_geo_info(tc)
+        print(f"Input: {tc}")
+        print(f"  -> Station: {res['station']}, Province: {res['province']}")
+        print("-" * 40)

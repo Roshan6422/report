@@ -195,16 +195,24 @@ def build_province_summary_table(data):
                     cat = _get_incident_category(inc)
                     counts[matched_prov][cat] += 1
 
-    html = '<div style="text-align:center;\
-font-weight:bold;\
-font-size:14pt;\
-margin-bottom:5mm;\
-">SUMMARY</div>'
-    html += '<table class="prov-summary-table"><tr><th style="width:30%;\
-"></th>'
-    header_cols = ["Theft", "HB & Theft", "Robberies<br>and Armed<br>Robberies", "Rape &<br>Sexual<br>Abuse", "Homicide", "Police<br>Accidents", "Fatal<br>Accidents", "Others"]
-    for c in header_cols: html += f'<th class="header-rotated"><div>{c}</div></th>'
-    html += '<th class="header-rotated"><div>Grand<br>total</div></th></tr>'
+    html = '<div class="summary-title">SUMMARY</div>'
+    html += '<table class="prov-summary-table">'
+    html += '<tr><th style="width:140pt;"></th>'
+    
+    # Matching the official sample's rotated headers
+    header_cols = [
+        "Theft", 
+        "HB & Theft", 
+        "Robberies and Armed Robberies", 
+        "Rape & Sexual Abuse", 
+        "Homicide", 
+        "Police Accidents", 
+        "Fatal Accidents", 
+        "Others"
+    ]
+    for c in header_cols:
+        html += f'<th class="header-rotated" style="width:42pt;"><div>{c}</div></th>'
+    html += '<th class="header-rotated" style="width:45pt;"><div>Grand total</div></th></tr>'
 
     col_totals = dict.fromkeys(columns, 0)
     grand_total = 0
@@ -217,13 +225,15 @@ margin-bottom:5mm;\
             row_total += val
             html += f'<td>{f"{val:02d}" if val > 0 else "-"}</td>'
         grand_total += row_total
-        html += f'<td>{f"<b>{row_total:02d}</b>" if row_total > 0 else "-"}</td></tr>'
+        html += f'<td><b>{f"{row_total:02d}" if row_total > 0 else "-"}</b></td></tr>'
 
+    # Total row
     html += '<tr><td class="left-align">Total</td>'
     for c in columns:
         val = col_totals[c]
-        html += f'<td>{f"<b>{val:02d}</b>" if val > 0 else "-"}</td>'
-    html += f'<td>{f"<b>{grand_total:02d}</b>" if grand_total > 0 else "-"}</td></tr></table>'
+        html += f'<td><b>{f"{val:02d}" if val > 0 else "-"}</b></td>'
+    html += f'<td><b>{f"{grand_total:02d}" if grand_total > 0 else "-"}</b></td></tr>'
+    html += '</table>'
     return html
 
 def _normalize_case_count_row(val):
@@ -231,15 +241,22 @@ def _normalize_case_count_row(val):
 case table expects dict rows."""
     if val is None:
         return {"reported": 0, "solved": 0, "unsolved": 0}
+    if isinstance(val, (int, float)):
+        return {"reported": int(val), "solved": 0, "unsolved": 0}
     if isinstance(val, dict):
-        return val
-    if isinstance(val, int):
-        return {"reported": val, "solved": 0, "unsolved": 0}
-    try:
-        n = int(val)
-        return {"reported": n, "solved": 0, "unsolved": 0}
-    except (TypeError, ValueError):
-        return {"reported": 0, "solved": 0, "unsolved": 0}
+        # Support the new parse map (total_incidents, resolved, unresolved)
+        rep = val.get("total_incidents", val.get("reported", 0))
+        sol = val.get("resolved", val.get("solved", 0))
+        unsol = val.get("unresolved", val.get("unsolved", 0))
+
+        def _to_int(k):
+            if k in ("-", "0", 0, None, "", "නැත"): return 0
+            try: return int(k)
+            except: return 0
+            
+        return {"reported": _to_int(rep), "solved": _to_int(sol), "unsolved": _to_int(unsol)}
+    # Fallback for any other type
+    return {"reported": 0, "solved": 0, "unsolved": 0}
 
 
 def build_case_table(counts=None):
@@ -282,7 +299,7 @@ def generate_general_report(data, output_path):
     all_p = "".join(pages)
     full_h = sanitize_html_for_pdf(build_institutional_html_document("General Situation Report", all_p))
     with open(output_path, "w", encoding="utf-8") as f: f.write(full_h)
-    print(f"✅ General Report generated: {output_path}")
+    print(f"[Done] General Report generated: {output_path}")
     return output_path
 
 if __name__ == "__main__":

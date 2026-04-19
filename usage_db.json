@@ -1,0 +1,88 @@
+{
+  "Gemini_4": {
+    "daily_count": 0,
+    "last_reset_day": "2026-04-04",
+    "minute_count": 0,
+    "last_reset_min": 1775242323.20598,
+    "exhausted_until": 1775243551.7066731
+  },
+  "Gemini_1": {
+    "daily_count": 4,
+    "last_reset_day": "2026-04-10",
+    "minute_count": 1,
+    "last_reset_min": 1775827652.7094064,
+    "exhausted_until": 1775816071.402917
+  },
+  "Gemini_2": {
+    "daily_count": 2,
+    "last_reset_day": "2026-04-04",
+    "minute_count": 0,
+    "last_reset_min": 1775242323.2033787,
+    "exhausted_until": 1775244856.4605734
+  },
+  "Gemini_5": {
+    "daily_count": 2,
+    "last_reset_day": "2026-04-04",
+    "minute_count": 0,
+    "last_reset_min": 1775242323.205483,
+    "exhausted_until": 1775244858.509249
+  },
+  "Gemini_3": {
+    "daily_count": 0,
+    "last_reset_day": "2026-04-04",
+    "minute_count": 0,
+    "last_reset_min": 1775242323.2050993,
+    "exhausted_until": 1775243553.233461
+  },
+  "GitHub_1": {
+    "daily_count": 40,
+    "last_reset_day": "2026-04-14",
+    "minute_count": 2,
+    "last_reset_min": 1776175801.9404821,
+    "server_remaining": 19999,
+    "last_update": 1776175821.8709793
+  },
+  "GitHub_3": {
+    "daily_count": 40,
+    "last_reset_day": "2026-04-14",
+    "minute_count": 2,
+    "last_reset_min": 1776175803.5527287,
+    "server_remaining": 19999,
+    "last_update": 1776175819.6476796
+  },
+  "GitHub_2": {
+    "daily_count": 40,
+    "last_reset_day": "2026-04-14",
+    "minute_count": 2,
+    "last_reset_min": 1776175803.527957,
+    "server_remaining": 19999,
+    "last_update": 1776175823.1888669
+  },
+  "Gemini_Env": {
+    "daily_count": 3,
+    "last_reset_day": "2026-04-03",
+    "minute_count": 0,
+    "last_reset_min": 1775237803.7441785,
+    "exhausted_until": 1775240500.602183
+  },
+  "AIzaSyDfQbBH7gKhzcaZm3NeC2xGKVInnNprTCE": {
+    "daily_count": 1,
+    "last_reset_day": "2026-04-04",
+    "minute_count": 1,
+    "last_reset_min": 1775274294.8048728,
+    "exhausted_until": 1775277904.4218414
+  },
+  "AIzaSyDGYCC6IdHxOFLygaGpA_YIrwy8kIjTu1E": {
+    "daily_count": 1,
+    "last_reset_day": "2026-04-04",
+    "minute_count": 1,
+    "last_reset_min": 1775311983.6225853
+  },
+  "AIzaSyAomgC15bL3s8epg-pNUthz3A8a36Rnjwg": {
+    "daily_count": 2,
+    "last_reset_day": "2026-04-07",
+    "minute_count": 0,
+    "last_reset_min": 1775511417.0380728,
+    "exhausted_until": 1775513454.2022047
+  }
+}

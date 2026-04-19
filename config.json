@@ -22,10 +22,12 @@
     },
     "ollama": {
       "enabled": true,
-      "local_model": "sri-lanka-police-ai:latest",
-      "kaggle_model": "police-ai-master:latest",
+      "local_model": "qwen3:4b",
+      "kaggle_model": "qwen3:4b",
       "base_url": "http://localhost:11434/api/generate",
       "kaggle_url": "https://nestable-mireya-uncarbonized.ngrok-free.dev/api/generate",
+      "kaggle_ocr_url": "https://nestable-mireya-uncarbonized.ngrok-free.dev/gpu-ocr",
+      "kaggle_pdf_url": "https://nestable-mireya-uncarbonized.ngrok-free.dev/translate-pdf",
       "prefer_kaggle": true,
       "timeout": 180
     }

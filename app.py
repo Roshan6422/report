@@ -3,16 +3,20 @@ Sinhala Police Report Data Extraction Application
 සිංහල පොලිස් වාර්තා දත්ත නිස්සාරණ යෙදුම
 
 This application extracts data from Sinhala police daily incident reports
-and converts them to structured JSON format with 100% accuracy.
-
-මෙම යෙදුම සිංහල පොලිස් දෛනික සිදුවීම් වාර්තාවලින් දත්ත නිස්සාරණය කර
-100% නිරවද්‍යතාවයකින් යුතුව ව්‍යුහගත JSON ආකෘතියට පරිවර්තනය කරයි.
+and converts them to structured JSON format with high accuracy.
 """
 
 import json
 import re
+import os
+import sys
+import logging
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict, List, Optional
+
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
 class SinhalaPoliceReportExtractor:
@@ -34,53 +38,57 @@ class SinhalaPoliceReportExtractor:
             "08": "ගෙවල් බිඳ",
             "09": "ස්ත්‍රී දූෂණ හා බරපතල ලිංගික අපයෝජන",
             "10": "මාර්ග රිය අනතුරු",
-            "11": "නාදුනන මළ සිරුරු හා සැක්සහිත මරණ",
+            "11": "නාදුනන මළ සිරුරු හා සැකසහිත මරණ",
             "12": "පොලිස් රිය අනතුරු",
             "13": "පොලිස් නිලධාරීන්ට තුවාල සිදුවීම සහ පොලිසිය සම්බන්ධ සිදුවීම",
             "14": "පොලිස් නිලධාරීන්ගේ විෂමාචාර ක්‍රියා",
-            "15": "පොලිස් නිලධාරීන් මියයෑ",
-            "16": "රාජ්‍ය නිෂේධිත නිලධාරීන් රෝහල් ගතවී",
-            "17": "රාජ්‍ය නිෂේධිත නිලධාරීන්ගේ ළඟම ඥාතීන් මියයෑ",
-            "18": "විශ්‍රාමික රාජ්‍ය නිෂේධිත නිලධාරීන්ගේ ළඟම ඥාතීන් මියයෑ",
-            "19": "නිවාඩු ලබා සිටින සෙය.නිපොප නි.පො.ප වරුන්",
-            "20": "විශාල ප්‍රමාණයේ මත් ද්‍රව්‍ය/මත්පැන් අත්අඩංගුට ගැනී",
-            "21": "අත්අඩංගුට ගැනී",
-            "22": "ත්‍රිවිධ හමුදා සාමාජිකයින්ගේ අපරාධ, විෂමාචාර ක්‍රියා හා අත්අඩංගුට ගැනී",
-            "23": "අතුරුදහන්වී",
-            "24": "සියදිවි හානිකර ගැනී",
-            "25": "විදේශ සාමිකයින් සම්බන්ධ සිදුවීම",
-            "26": "වනඅලි පහරදී හා වනඅලි මියයෑ",
-            "27": "දියේ ගිලී මියයෑ",
-            "28": "ගිනි ගැනීම සම්බන්ධ සිදුවීම",
-            "29": "වෙනත් විශේෂ සිදුවීම"
+            "15": "පොලිස් නිලධාරීන් මියයෑම",
+            "16": "රාජ්‍ය නිෂේධිත නිලධාරීන් රෝහල් ගතවීම",
+            "17": "රාජ්‍ය නිෂේධිත නිලධාරීන්ගේ ළඟම ඥාතීන් මියයෑම",
+            "18": "විශ්‍රාමික රාජ්‍ය නිෂේධිත නිලධාරීන්ගේ ළඟම ඥාතීන් මියයෑම",
+            "19": "නිවාඩු ලබා සිටින සෙ.නි.පො.ප නි.පො.ප වරුන්",
+            "20": "විශාල ප්‍රමාණයේ මත් ද්‍රව්‍ය/මත්පැන් අත්අඩංගුවට ගැනීම",
+            "21": "අත්අඩංගුවට ගැනීම්",
+            "22": "ත්‍රිවිධ හමුදා සාමාජිකයින්ගේ අපරාධ, විෂමාචාර ක්‍රියා හා අත්අඩංගුවට ගැනීම",
+            "23": "අතුරුදහන්වීම",
+            "24": "සියදිවි හානිකර ගැනීම්",
+            "25": "විදේශ සාමාජිකයින් සම්බන්ධ සිදුවීම්",
+            "26": "වනඅලි පහරදීම් හා වනඅලි මියයෑම්",
+            "27": "දියේ ගිලී මියයෑම්",
+            "28": "ගිනි ගැනීම සම්බන්ධ සිදුවීම්",
+            "29": "වෙනත් විශේෂ සිදුවීම්"
         }
 
     def extract_from_pdf(self, pdf_path: str, progress_callback=None) -> str:
         """
         Extract high-fidelity Sinhala text from PDF using Surya OCR
-        Surya OCR භාවිතයෙන් PDF ගොනුවෙන් ඉහළ නිරවද්‍යතාවයකින් යුත් සිංහල පෙළ නිස්සාරණය කරන්න
         """
         try:
+            # Try local OCR tool if available
             from local_ocr_tool import extract_text_from_pdf
+            logger.info("🚀 Using Local OCR Tool (Surya)...")
             pages = extract_text_from_pdf(pdf_path, progress_callback=progress_callback)
             return "\n\n".join(pages)
         except ImportError:
-            print("⚠️ local_ocr_tool not found. Falling back to basic extraction...")
-            text = ""
-            with open(pdf_path, 'rb') as file:
+            logger.warning("⚠️ local_ocr_tool not found. Falling back to PyPDF2 (Text-based PDFs only)...")
+            try:
                 import PyPDF2
-                pdf_reader = PyPDF2.PdfReader(file)
-                for page in pdf_reader.pages:
-                    text += page.extract_text()
-            return text
+                text = ""
+                with open(pdf_path, 'rb') as file:
+                    pdf_reader = PyPDF2.PdfReader(file)
+                    for page in pdf_reader.pages:
+                        text += page.extract_text() + "\n"
+                return text.strip()
+            except Exception as e:
+                logger.error(f"❌ PyPDF2 Extraction Error: {e}")
+                return ""
         except Exception as e:
-            print(f"❌ Extraction Error: {e}")
+            logger.error(f"❌ Extraction Error: {e}")
             return ""
 
-    def extract_header(self, text: str) -> dict[str, Any]:
+    def extract_header(self, text: str) -> Dict[str, Any]:
         """
         Extract report header information
-        වාර්තා ශීර්ෂ තොරතුරු නිස්සාරණය කරන්න
         """
         header = {
             "report_title": "දෛනික සිදුවීම් වාර්ථාව",
@@ -106,24 +114,19 @@ class SinhalaPoliceReportExtractor:
     def is_nil_category(self, text: str, category_num: str) -> bool:
         """
         Check if a category has no incidents (නැත)
-        ප්‍රවර්ගයක සිදුවීම් නොමැති දැයි පරීක්ෂා කරන්න
         """
         # Pattern: 01. ත්‍රස්තවාදී ක්‍රියාකාරකම : නැත.
-        # Robust pattern matching the improved English parser
         pattern = rf'(?:^|\n)[ \t*#-]*(?:Serial\s*No\.?\s*)?{category_num}[\.)\*]*[ \t]+[^\n]*?(:?\s*(?:නැත|Nil|None))'
         return bool(re.search(pattern, text, re.IGNORECASE))
 
     def extract_category_count(self, text: str, category_num: str) -> Any:
         """
         Extract incident count for a category
-        ප්‍රවර්ගයක සිදුවීම් ගණන නිස්සාරණය කරන්න
         """
-        # Check if nil first
         if self.is_nil_category(text, category_num):
             return "නැත"
 
         # Pattern: 02. අවි ආයුධ සොයා ගැනීම (පුපුරණ ද්‍රව්‍ය / උණ්ඩ) :- 09
-        # Robust pattern to handle Serial No, markdown bolding, etc.
         count_pattern = rf'(?:^|\n)[ \t*#-]*(?:Serial\s*No\.?\s*)?{category_num}[\.)\*]*[ \t]+[^\n]+?(?:[:-]\s*|Reported\s*:?\s*)(\d+)'
         match = re.search(count_pattern, text, re.IGNORECASE)
 
@@ -132,14 +135,13 @@ class SinhalaPoliceReportExtractor:
 
         return 0
 
-    def extract_table_data(self, text: str, category_num: str) -> list[dict[str, Any]]:
+    def extract_table_data(self, text: str, category_num: str) -> List[Dict[str, Any]]:
         """
         Extract data from table format categories
-        වගු ආකෘති ප්‍රවර්ග වලින් දත්ත නිස්සාරණය කරන්න
         """
         incidents = []
 
-        # Find the category section using robust header pattern
+        # Find the category section
         header_pattern = rf'(?:^|\n)[ \t*#-]*(?:Serial\s*No\.?\s*)?{category_num}[\.)\*]*\s+'
         cat_match = re.search(header_pattern, text, re.IGNORECASE)
 
@@ -147,24 +149,27 @@ class SinhalaPoliceReportExtractor:
             return incidents
 
         start_pos = cat_match.start()
+        
         # Find the next category header or end of file
         next_cat_pattern = r'(?:\n|^)[ \t*#-]*(?:Serial\s*No\.?\s*)?\d{2}[\.)\*]*\s+'
+        # Search in the text AFTER the current category header
         next_cat_match = re.search(next_cat_pattern, text[cat_match.end():], re.IGNORECASE)
 
         if next_cat_match:
-            category_text = text[start_pos : cat_match.end() + next_cat_match.start()]
+            # Absolute end position
+            end_pos = cat_match.end() + next_cat_match.start()
+            category_text = text[start_pos : end_pos]
         else:
             category_text = text[start_pos:]
 
-        # Table rows live below the category title line; including the title makes
-        # "02. Category name..." match as a false first row for category 02.
-        # Header match may start with a leading newline — do not treat that as "line 1".
+        # Remove the category title line itself to process only the rows
         _hdr = category_text.lstrip("\n\r")
         _end = _hdr.find("\n")
         category_body = _hdr[_end + 1 :] if _end != -1 else ""
 
         # Extract table rows (numbered 1., 2., 3., etc.)
-        row_pattern = r'(\d+)\.\s+(.*?)(?=\d+\.\s+|$)'
+        # Use DOTALL to allow matching across multiple lines for each row
+        row_pattern = r'(\d+)\.\s+(.*?)(?=\n\d+\.\s+|$)'
         rows = re.finditer(row_pattern, category_body, re.DOTALL)
 
         for row in rows:
@@ -178,10 +183,9 @@ class SinhalaPoliceReportExtractor:
 
         return incidents
 
-    def parse_incident_row(self, row_text: str, category_num: str) -> dict[str, Any] | None:
+    def parse_incident_row(self, row_text: str, category_num: str) -> Optional[Dict[str, Any]]:
         """
         Parse a single incident row
-        තනි සිදුවීම් පේළියක් විග්‍රහ කරන්න
         """
         incident = {
             "police_station": "",
@@ -222,27 +226,25 @@ class SinhalaPoliceReportExtractor:
         if ir_match:
             incident["report_time"] = ir_match.group(1)
 
-        # Extract person details (victim/suspect)
+        # Extract person details
         incident["victim"] = self.extract_person_details(row_text, "පැමිණිලිකරු")
         incident["suspect"] = self.extract_person_details(row_text, "සැකකරු")
 
         # Extract financial loss
-        # Pattern: වටිනාකම රු : 560,000 =
         loss_pattern = r'වටිනාකම\s+රු\s*:\s*([\d,]+)\s*='
         loss_match = re.search(loss_pattern, row_text)
 
         if loss_match:
             incident["financial_loss"] = loss_match.group(1)
 
-        # Extract description (clean the text)
+        # Extract description
         incident["description"] = self.clean_text(row_text)
 
         return incident
 
-    def extract_person_details(self, text: str, person_type: str) -> dict[str, Any]:
+    def extract_person_details(self, text: str, person_type: str) -> Dict[str, Any]:
         """
         Extract person details (victim/suspect)
-        පුද්ගල විස්තර නිස්සාරණය කරන්න (වින්දිතයා/සැකකරු)
         """
         person = {
             "name": "",
@@ -253,9 +255,9 @@ class SinhalaPoliceReportExtractor:
             "phone": ""
         }
 
-        # Extract name
-        # Pattern: බී.ජී.සී. අමරවීර
-        name_pattern = r'([A-Z]\.(?:[A-Z]\.)*[A-Z]\.\s+)?([^\n]+?)(?=අවු|වයස|පුරුෂ|ස්ත්‍රී)'
+        # Extract name (More robust pattern)
+        # Looks for text before Age/Gender keywords
+        name_pattern = r'([A-Z]\.(?:[A-Z]\.)*[A-Z]\.\s+)?([^\n]+?)(?=අවු|වයස|පුරුෂ|ස්ත්‍රී|රැකියාව|අංක|දු\.අ)'
         name_match = re.search(name_pattern, text)
 
         if name_match:
@@ -276,7 +278,7 @@ class SinhalaPoliceReportExtractor:
             person["gender"] = "ස්ත්‍රී"
 
         # Extract occupation
-        occupation_pattern = r'රැකියාව\s*:\s*([^\n]+?)(?=අංක|දු\.අ)'
+        occupation_pattern = r'රැකියාව\s*:\s*([^\n]+?)(?=අංක|දු\.අ|$)'
         occupation_match = re.search(occupation_pattern, text)
 
         if occupation_match:
@@ -301,7 +303,6 @@ class SinhalaPoliceReportExtractor:
     def clean_text(self, text: str) -> str:
         """
         Clean and normalize text
-        පෙළ පිරිසිදු කර සාමාන්‍යකරණය කරන්න
         """
         # Remove extra whitespace
         text = re.sub(r'\s+', ' ', text)
@@ -309,31 +310,39 @@ class SinhalaPoliceReportExtractor:
         text = re.sub(r'[^\u0D80-\u0DFF\sA-Za-z\d.,;:()\-=/]', '', text)
         return text.strip()
 
-    def extract_summary_table(self, text: str) -> dict[str, dict[str, Any]]:
+    def extract_summary_table(self, text: str) -> Dict[str, Dict[str, Any]]:
         """
         Extract the summary table from the end of the report
-        වාර්තාවේ අවසානයේ ඇති සාරාංශ වගුව නිස්සාරණය කරන්න
         """
         summary = {}
+        try:
+            from sinhala_summary_parser import SinhalaSummaryParser
+            parser = SinhalaSummaryParser(self.categories)
+            summary = parser.parse_summary_table(text)
+        except Exception as e:
+            logger.error(f"Error extracting summary natively: {e}")
+            
+        # Fallback to heading count if parsing returned 0 for total_incidents on all categories
+        # (This happens if OCR table format is completely garbage, so we guarantee fallback numbers)
+        total_found = sum(cat.get("total_incidents", 0) for cat in summary.values())
+        if total_found == 0:
+            logger.info("Native parsing returned 0 incidents. Falling back to heading-based count...")
+            for cat_num in self.categories:
+                count = self.extract_category_count(text, cat_num)
 
-        for cat_num in self.categories:
-            count = self.extract_category_count(text, cat_num)
-
-            summary[cat_num] = {
-                "category_name": self.categories[cat_num],
-                "total_incidents": count,
-                "resolved": "-",
-                "unresolved": "-"
-            }
+                summary[cat_num] = {
+                    "category_name": self.categories[cat_num],
+                    "total_incidents": count,
+                    "resolved": "-",
+                    "unresolved": "-"
+                }
 
         return summary
 
-    def extract_all(self, pdf_path: str) -> dict[str, Any]:
+    def extract_all(self, pdf_path: str) -> Dict[str, Any]:
         """
         Extract all data from the PDF report
-        PDF වාර්තාවෙන් සියලුම දත්ත නිස්සාරණය කරන්න
         """
-        # Extract text from PDF
         pdf_text = self.extract_from_pdf(pdf_path)
 
         if not pdf_text:
@@ -341,12 +350,10 @@ class SinhalaPoliceReportExtractor:
 
         return self.extract_all_from_text(pdf_text)
 
-    def extract_all_from_text(self, pdf_text: str) -> dict[str, Any]:
+    def extract_all_from_text(self, pdf_text: str) -> Dict[str, Any]:
         """
         Extract all data from raw report text
-        පෙළ වාර්තාවෙන් සියලුම දත්ත නිස්සාරණය කරන්න
         """
-        # Initialize report data structure
         report_data = {
             "header": self.extract_header(pdf_text),
             "categories": {},
@@ -359,7 +366,6 @@ class SinhalaPoliceReportExtractor:
             }
         }
 
-        # Extract data for each category
         for cat_num, cat_name in self.categories.items():
             category_data = {
                 "category_number": cat_num,
@@ -371,12 +377,10 @@ class SinhalaPoliceReportExtractor:
                 }
             }
 
-            # Check if category is nil
             if self.is_nil_category(pdf_text, cat_num):
                 category_data["summary"]["status"] = "නැත"
                 category_data["summary"]["total_incidents"] = "නැත"
             else:
-                # Extract incidents for this category
                 incidents = self.extract_table_data(pdf_text, cat_num)
                 category_data["incidents"] = incidents
                 category_data["summary"]["total_incidents"] = len(incidents)
@@ -387,24 +391,37 @@ class SinhalaPoliceReportExtractor:
 
             report_data["categories"][cat_num] = category_data
 
-        # Extract summary table
-        report_data["summary_table"] = self.extract_summary_table(pdf_text)
+        summary_table = self.extract_summary_table(pdf_text)
+        report_data["summary_table"] = summary_table
+
+        # Cross Verification: Warn if actual extracted list doesn't match the summary table numbers
+        for cat_num, cat_data in report_data["categories"].items():
+            expected = summary_table.get(cat_num, {}).get("total_incidents", 0)
+            actual = cat_data["summary"]["total_incidents"]
+            # Convert "නැත" or str to int
+            if str(actual) == "නැත": actual = 0
+            if expected > actual:
+                msg = f"Missing incidents in Category {cat_num}: Summary table claims {expected}, but only {actual} incidents extracted!"
+                logger.error(f"❌ Cross-Check Failed: {msg}")
+                report_data["metadata"]["warnings"].append(msg)
+            elif actual > expected and expected > 0:
+                msg = f"Extra incidents mapped in Category {cat_num}: Summary table claims {expected}, but {actual} incidents extracted!"
+                logger.warning(f"⚠️ Cross-Check Warning: {msg}")
+                report_data["metadata"]["warnings"].append(msg)
 
         return report_data
 
-    def save_to_json(self, data: dict[str, Any], output_file: str):
+    def save_to_json(self, data: Dict[str, Any], output_file: str):
         """
         Save extracted data to JSON file
-        නිස්සාරණය කළ දත්ත JSON ගොනුවකට සුරකින්න
         """
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         print(f"✓ Data saved to: {output_file}")
 
-    def generate_summary_report(self, data: dict[str, Any]) -> str:
+    def generate_summary_report(self, data: Dict[str, Any]) -> str:
         """
         Generate a text summary of the report
-        වාර්තාවේ පෙළ සාරාංශයක් ජනනය කරන්න
         """
         lines = []
         lines.append("=" * 80)
@@ -413,20 +430,17 @@ class SinhalaPoliceReportExtractor:
         lines.append("=" * 80)
         lines.append("")
 
-        # Header info
         header = data.get("header", {})
         lines.append(f"වාර්තා කාලය: {header.get('report_period', 'N/A')}")
         lines.append(f"Report Period: {header.get('report_period', 'N/A')}")
         lines.append("")
 
-        # Metadata
         metadata = data.get("metadata", {})
         lines.append(f"මුළු ප්‍රවර්ග: {metadata.get('total_categories', 0)}")
         lines.append(f"සිදුවීම් සහිත ප්‍රවර්ග: {metadata.get('categories_with_incidents', 0)}")
         lines.append(f"මුළු සිදුවීම්: {metadata.get('total_incidents', 0)}")
         lines.append("")
 
-        # Category summary
         lines.append("ප්‍රවර්ග සාරාංශය:")
         lines.append("Category Summary:")
         lines.append("-" * 80)
@@ -452,11 +466,7 @@ class SinhalaPoliceReportExtractor:
 def main():
     """
     Main function - Command line interface
-    ප්‍රධාන ශ්‍රිතය - විධාන රේඛා අතුරුමුහුණත
     """
-    import os
-    import sys
-
     print("=" * 80)
     print("Sinhala Police Report Data Extraction & Report Generation Tool")
     print("සිංහල පොලිස් වාර්තා නිස්සාරණය සහ ඉංග්‍රීසි වාර්තා උත්පාදන මෙවලම")
@@ -466,36 +476,32 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python app.py <pdf_file>")
         print("Example: python app.py report.pdf")
-        print()
-        print("භාවිතය: python app.py <pdf_ගොනුව>")
-        print("උදාහරණය: python app.py report.pdf")
         return
 
     pdf_file = sys.argv[1]
-    output_json = pdf_file.replace('.pdf', '_extracted.json')
-    output_summary = pdf_file.replace('.pdf', '_summary.txt')
+    
+    # Sanitize filenames
+    base_name = os.path.splitext(os.path.basename(pdf_file))[0]
+    output_json = f"{base_name}_extracted.json"
+    output_summary = f"{base_name}_summary.txt"
 
     print(f"📄 Input PDF: {pdf_file}")
     print(f"📊 Output JSON: {output_json}")
     print(f"📝 Output Summary: {output_summary}")
     print()
 
+    extractor = SinhalaPoliceReportExtractor()
+    data = {}
+
     # 1. 100% LOCAL HIGH-FIDELITY EXTRACTION (Surya + Regex)
     print("=" * 80)
     print("🚀 Running 100% Local Master Pipeline (Surya AI + Regex)...")
-    print("🚀 100% දේශීය ප්‍රධාන ක්‍රියාවලිය ක්‍රියාත්මක කරමින් (Surya AI + Regex)...")
     print("=" * 80)
 
-    extractor = SinhalaPoliceReportExtractor()
-
     try:
+        # Try desktop pipeline first if available
         from desktop_pipeline import process_pdf_hyper_hybrid
-
-        # Run the official institutional master pipeline
-        result = process_pdf_hyper_hybrid(
-            pdf_path=pdf_file,
-            output_folder="outputs"
-        )
+        result = process_pdf_hyper_hybrid(pdf_path=pdf_file, output_folder="outputs")
 
         if result.get("success"):
             print("\n" + "=" * 50)
@@ -504,16 +510,18 @@ def main():
             print("📂 Results in: outputs")
             for pdf in result.get('generated_pdfs', []):
                 print(f"   ✓ {os.path.basename(pdf)}")
-            print()
             return
         else:
             print(f"❌ Pipeline failed: {result.get('error')}")
-            # Fallback to pure regex if pipeline fails
             print("⚠️ Falling back to pure Regex extraction...")
             data = extractor.extract_all(pdf_file)
+            
+    except ImportError:
+        print("⚠️ Desktop pipeline module not found. Using pure Regex extraction.")
+        data = extractor.extract_all(pdf_file)
     except Exception as e:
         print(f"⚠️ Master pipeline error: {e}")
-        print("⚠️ Falling back to basic regex extraction...")
+        print("⚠️ Falling back to pure Regex extraction...")
         data = extractor.extract_all(pdf_file)
 
     if "error" in data:
@@ -526,31 +534,21 @@ def main():
 
     # Generate summary report
     summary = extractor.generate_summary_report(data)
-
     with open(output_summary, 'w', encoding='utf-8') as f:
         f.write(summary)
     print(f"✓ Summary saved to: {output_summary}")
 
-    # Print summary to console
     print()
     print(summary)
 
+    # Generate English Reports (Optional Step)
     print()
     print("=" * 80)
-    print("✅ Extraction complete! / නිස්සාරණය සම්පූර්ණයි!")
-    print("=" * 80)
-    print()
-
-    # Generate English Reports (General & Security) using institutional 4-stage pipeline
-    print("=" * 80)
-    print("🚀 Running Institutional 4-Stage Pipeline (100% Accuracy Mode)...")
-    print("🚀 පියවර 4 කින් සමන්විත ආයතනික ක්‍රියාවලිය ක්‍රියාත්මක කරමින් (100% නිවැරදිකම)...")
+    print("🚀 Attempting Institutional 4-Stage Pipeline (Translation)...")
     print("=" * 80)
 
     try:
         from process_and_translate import process_and_translate
-
-        # We'll use the current folder as app_config_folder for outputs
         result = process_and_translate(
             data=data,
             filename=os.path.basename(pdf_file),
@@ -559,30 +557,28 @@ def main():
 
         if result.get("success"):
             print("\n" + "=" * 50)
-            print("✅ INSTITUTIONAL PROCESSING COMPLETE!")
+            print("✅ TRANSLATION PIPELINE COMPLETE!")
             print("=" * 50)
-            print(f"📁 Results in: {result['output_dir']}")
-            for pdf in result['files']:
+            print(f"📁 Results in: {result.get('output_dir', '.')}")
+            for pdf in result.get('files', []):
                 print(f"   ✓ {os.path.basename(pdf)}")
-            print()
         else:
-            print("❌ Pipeline failed to complete successfully.")
+            print("❌ Translation pipeline failed.")
 
-    except ImportError as e:
-        print(f"⚠ Report generation skipped: {e}")
-        print("⚠ Make sure general_report_engine.py and web_report_engine_v2.py are available")
+    except ImportError:
+        print("⚠️ Translation module not found. Skipping English report generation.")
     except Exception as e:
         print(f"❌ Error generating reports: {e}")
-        import traceback
-        traceback.print_exc()
 
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) > 1:
         main()
     else:
         print("Starting Police Web UI (Classic Mode)...")
-        from police_web_ui import app as flask_app
-        # Run on port 5000 - disable debug mode for production
-        flask_app.run(host='0.0.0.0', port=5000, debug=False)
+        try:
+            from police_web_ui import app as flask_app
+            flask_app.run(host='0.0.0.0', port=5000, debug=False)
+        except ImportError:
+            print("❌ Web UI module not found. Please run with a PDF file argument.")
+            print("Usage: python app.py <pdf_file>")

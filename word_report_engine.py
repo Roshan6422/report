@@ -1,10 +1,9 @@
 import os
+import zipfile
+import tempfile
 from datetime import datetime
-
 from docxtpl import DocxTemplate
-
 from police_patterns import GENERAL_SECTIONS, PROVINCE_LIST, SECURITY_SECTIONS
-
 
 class WordReportEngine:
     """
@@ -15,7 +14,7 @@ class WordReportEngine:
         self.templates_dir = templates_dir
         self.gen_template_path = None
         self.sec_template_path = None
-
+        
         # Find templates in the directory (General and Security)
         if os.path.exists(templates_dir):
             for f in os.listdir(templates_dir):
@@ -33,7 +32,6 @@ class WordReportEngine:
 
     def _convert_to_docx_format(self, template_path, temp_name):
         """Fix for python-docx rejecting .dotx templates by rewriting internal content type."""
-        import zipfile
         with zipfile.ZipFile(template_path, 'r') as zin:
             with zipfile.ZipFile(temp_name, 'w') as zout:
                 for item in zin.infolist():
@@ -87,28 +85,28 @@ class WordReportEngine:
                         elif num == 3: target_section_title = SECURITY_SECTIONS[1]
                         elif num == 2: target_section_title = SECURITY_SECTIONS[2]
                         else: target_section_title = SECURITY_SECTIONS[3]
-                    else: continue # Skip general incidents in security report
+                    else: continue  # Skip general incidents in security report
 
                 # GENERAL REPORT MAPPING
                 else:
-                    if origin == "Security": continue # Skip security incidents in general report
+                    if origin == "Security": continue  # Skip security incidents in general report
 
-                    if num in [4, 5, 6, 7, 8]: target_section_title = GENERAL_SECTIONS[0] # 01. SERIOUS CRIMES
-                    elif num == 9: target_section_title = GENERAL_SECTIONS[1] # 02. RAPE / ABUSE
-                    elif num == 10: target_section_title = GENERAL_SECTIONS[2] # 03. FATAL ACCIDENTS
-                    elif num == 12: target_section_title = GENERAL_SECTIONS[3] # 04. POLICE ACCIDENTS
-                    elif num == 11: target_section_title = GENERAL_SECTIONS[4] # 05. DEAD BODIES
-                    elif num == 14: target_section_title = GENERAL_SECTIONS[5] # 06. POLICE MISCONDUCT
-                    elif num in [15, 16, 17, 18, 19]: target_section_title = GENERAL_SECTIONS[6] # 07. POLICE INJURY/ILLNESSES/DEATHS
-                    elif num == 20: target_section_title = GENERAL_SECTIONS[7] # 08. NARCOTIC / LIQUOR (cat 20, not 19)
-                    elif num == 22: target_section_title = GENERAL_SECTIONS[8] # 09. TRI-FORCES ARREST (cat 22, not 21)
+                    if num in [4, 5, 6, 7, 8]: target_section_title = GENERAL_SECTIONS[0]  # 01. SERIOUS CRIMES
+                    elif num == 9: target_section_title = GENERAL_SECTIONS[1]  # 02. RAPE / ABUSE
+                    elif num == 10: target_section_title = GENERAL_SECTIONS[2]  # 03. FATAL ACCIDENTS
+                    elif num == 12: target_section_title = GENERAL_SECTIONS[3]  # 04. POLICE ACCIDENTS
+                    elif num == 11: target_section_title = GENERAL_SECTIONS[4]  # 05. DEAD BODIES
+                    elif num == 14: target_section_title = GENERAL_SECTIONS[5]  # 06. POLICE MISCONDUCT
+                    elif num in [15, 16, 17, 18, 19]: target_section_title = GENERAL_SECTIONS[6]  # 07. POLICE INJURY/ILLNESSES/DEATHS
+                    elif num == 20: target_section_title = GENERAL_SECTIONS[7]  # 08. NARCOTIC / LIQUOR (cat 20, not 19)
+                    elif num == 22: target_section_title = GENERAL_SECTIONS[8]  # 09. TRI-FORCES ARREST (cat 22, not 21)
                     elif num == 13:
                         desc = (inc.get("body") or "").lower()
                         if "property" in desc or "vehicle" in desc or "damage" in desc:
-                            target_section_title = GENERAL_SECTIONS[3] # 04. POLICE ACCIDENTS
+                            target_section_title = GENERAL_SECTIONS[3]  # 04. POLICE ACCIDENTS
                         else:
-                            target_section_title = GENERAL_SECTIONS[6] # 07. POLICE INJURY/DEATH
-                    else: target_section_title = GENERAL_SECTIONS[9] # 10. OTHER
+                            target_section_title = GENERAL_SECTIONS[6]  # 07. POLICE INJURY/DEATH
+                    else: target_section_title = GENERAL_SECTIONS[9]  # 10. OTHER
 
                 if not target_section_title:
                     continue
@@ -159,7 +157,6 @@ class WordReportEngine:
         # Process General Word Report
         if self.gen_template_path:
             try:
-                import tempfile
                 # Convert .dotx to .docx by hacking the internal Content Types XML
                 with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tf:
                     temp_name = tf.name
@@ -182,7 +179,6 @@ class WordReportEngine:
         # Process Security Word Report
         if self.sec_template_path:
             try:
-                import tempfile
                 with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tf:
                     temp_name = tf.name
                 self._convert_to_docx_format(self.sec_template_path, temp_name)

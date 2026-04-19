@@ -1,19 +1,32 @@
+"""
+ai_providers.py — Modular AI Provider Classes (Production-Ready)
+Version: v3.0.0
+"""
 import os
 import time
-
+import threading  # ✅ ADD THIS IMPORT!
+import logging
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Shared session with retry logic for all providers
 # ---------------------------------------------------------------------------
 
 _ai_session = requests.Session()
-_ai_retry   = Retry(total=2, backoff_factor=1, status_forcelist=[502, 503, 504])
+_ai_retry = Retry(
+    total=2,
+    backoff_factor=1,
+    status_forcelist=[502, 503, 504, 429],
+    allowed_methods=["POST", "GET"]
+)
 _ai_adapter = HTTPAdapter(max_retries=_ai_retry)
 _ai_session.mount("https://", _ai_adapter)
-_ai_session.mount("http://",  _ai_adapter)
+_ai_session.mount("http://", _ai_adapter)
 
 
 # ---------------------------------------------------------------------------
@@ -22,31 +35,37 @@ _ai_session.mount("http://",  _ai_adapter)
 
 class BaseProvider:
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: str | None = None) -> str:
-        raise NotImplementedError
+             model_override: Optional[str] = None) -> str:
+        raise NotImplementedError("Subclasses must implement call()")
 
 
 # ---------------------------------------------------------------------------
-# GitHub Models Provider  (OpenAI-compatible, Azure endpoint)
+# GitHub Models Provider (OpenAI-compatible, Azure endpoint)
 # ---------------------------------------------------------------------------
 
 class GitHubProvider(BaseProvider):
     def __init__(self, api_url: str, model_name: str, api_keys: list):
-        self.api_url    = api_url.rstrip("/")
+        self.api_url = api_url.rstrip("/")
         self.model_name = model_name
-        self.api_keys   = api_keys   # list of (name, key) tuples
-        self.key_index  = 0
+        self.api_keys = api_keys  # list of (name, key) tuples or plain strings
+        self.key_index = 0
+        self._lock = threading.Lock()  # ✅ Now threading is available
 
-    def get_next_key(self) -> str | None:
+    def get_next_key(self) -> Optional[str]:
         if not self.api_keys:
             return None
-        item = self.api_keys[self.key_index % len(self.api_keys)]
-        self.key_index += 1
+        if self._lock:
+            with self._lock:
+                item = self.api_keys[self.key_index % len(self.api_keys)]
+                self.key_index += 1
+        else:
+            item = self.api_keys[self.key_index % len(self.api_keys)]
+            self.key_index += 1
         # Support both plain strings and (name, key) tuples
-        return item[1] if isinstance(item, (list, tuple)) else item
+        return item[1] if isinstance(item, (list, tuple)) and len(item) >= 2 else str(item)
 
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: str | None = None) -> str:
+             model_override: Optional[str] = None) -> str:
         key = self.get_next_key()
         if not key:
             return "❌ GitHub Error: No API Key configured."
@@ -59,28 +78,28 @@ class GitHubProvider(BaseProvider):
 
         headers = {
             "Authorization": f"Bearer {key}",
-            "Content-Type":  "application/json",
+            "Content-Type": "application/json",
         }
         payload = {
-            "model":       model,
-            "messages":    [
+            "model": model,
+            "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user",   "content": prompt},
+                {"role": "user", "content": prompt},
             ],
-            "max_tokens":  max_out,
+            "max_tokens": max_out,
             "temperature": 0.3,
         }
         try:
             res = _ai_session.post(
                 f"{self.api_url}/chat/completions",
-                headers=headers, json=payload, timeout=timeout,
+                headers=headers, json=payload, timeout=(10, timeout),
             )
             if res.status_code == 200:
                 data = res.json()
                 if data.get("choices"):
                     ch = data["choices"][0]
                     if ch.get("finish_reason") == "length":
-                        print(f"  [GitHub] ⚠️ Output truncated for {model}. Raise GITHUB_MAX_OUTPUT_TOKENS.")
+                        logger.warning(f"  [GitHub] ⚠️ Output truncated for {model}. Raise GITHUB_MAX_OUTPUT_TOKENS.")
                     return ch["message"]["content"]
                 return "❌ GitHub Error: Empty choices in response."
             if res.status_code == 401:
@@ -95,36 +114,40 @@ class GitHubProvider(BaseProvider):
 
 
 # ---------------------------------------------------------------------------
-# Gemini Provider  (Google Generative Language REST API)
+# Gemini Provider (Google Generative Language REST API)
 # ---------------------------------------------------------------------------
 
-# Ordered list of Gemini models to try (newest/fastest first)
 _GEMINI_MODEL_PRIORITY = [
     "gemini-2.0-flash",
     "gemini-1.5-flash",
     "gemini-1.5-pro",
-    "gemini-pro",          # legacy fallback
+    "gemini-pro",  # legacy fallback
 ]
 
 class GeminiProvider(BaseProvider):
     def __init__(self, api_keys: list):
-        self.api_keys  = api_keys
+        self.api_keys = api_keys
         self.key_index = 0
+        self._lock = threading.Lock()  # ✅ Now threading is available
 
-    def _get_next_key(self) -> str | None:
+    def _get_next_key(self) -> Optional[str]:
         if not self.api_keys:
             return None
-        key = self.api_keys[self.key_index % len(self.api_keys)]
-        self.key_index += 1
+        if self._lock:
+            with self._lock:
+                key = self.api_keys[self.key_index % len(self.api_keys)]
+                self.key_index += 1
+        else:
+            key = self.api_keys[self.key_index % len(self.api_keys)]
+            self.key_index += 1
         return key
 
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: str | None = None) -> str:
+             model_override: Optional[str] = None) -> str:
         if not self.api_keys:
             return "❌ Gemini Error: No API key configured."
 
         key = self._get_next_key()
-
         models_to_try = [model_override] if model_override else _GEMINI_MODEL_PRIORITY
 
         for model in models_to_try:
@@ -132,32 +155,32 @@ class GeminiProvider(BaseProvider):
                 f"https://generativelanguage.googleapis.com/v1beta/models/"
                 f"{model}:generateContent?key={key}"
             )
-            # Gemini v1beta supports systemInstruction for better separation
             payload = {
-                "systemInstruction": {
-                    "parts": [{"text": system_prompt}]
-                },
-                "contents": [
-                    {"parts": [{"text": prompt}]}
-                ],
+                "systemInstruction": {"parts": [{"text": system_prompt}]},
+                "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
                     "temperature": 0.3,
                     "maxOutputTokens": 8192,
                 },
             }
             try:
-                res = _ai_session.post(url, headers={"Content-Type": "application/json"},
-                                       json=payload, timeout=timeout)
+                res = _ai_session.post(
+                    url, headers={"Content-Type": "application/json"},
+                    json=payload, timeout=(10, timeout)
+                )
                 if res.status_code == 200:
                     data = res.json()
                     try:
-                        return data["candidates"][0]["content"]["parts"][0]["text"]
-                    except (KeyError, IndexError):
-                        return "❌ Gemini Error: Unexpected response structure."
+                        candidates = data.get("candidates", [])
+                        if not candidates:
+                            return "❌ Gemini Error: No candidates generated (safety filter?)."
+                        return candidates[0]["content"]["parts"][0]["text"]
+                    except (KeyError, IndexError, TypeError) as e:
+                        logger.warning(f"  [Gemini] Parse Error: {e}")
+                        return "❌ Gemini Error: Malformed response structure."
 
                 if res.status_code == 404:
-                    # Model not available — try next in list
-                    print(f"  [Gemini] Model '{model}' not found (404). Trying next…")
+                    logger.info(f"  [Gemini] Model '{model}' not found (404). Trying next…")
                     continue
                 if res.status_code == 401:
                     return "❌ Gemini Error: 401 Unauthorized — check API key."
@@ -174,29 +197,33 @@ class GeminiProvider(BaseProvider):
 
 
 # ---------------------------------------------------------------------------
-# Ollama Provider  (local or Kaggle ngrok tunnel)
+# Ollama Provider (local or Kaggle ngrok tunnel)
 # ---------------------------------------------------------------------------
 
 class OllamaProvider(BaseProvider):
     def __init__(self, base_url: str, model_name: str):
-        self.base_url   = base_url
+        self.base_url = base_url
         self.model_name = model_name
 
     @property
     def _is_cloud(self) -> bool:
-        return "ngrok" in self.base_url or "kaggle" in self.base_url
+        cloud_indicators = ["ngrok.io", "ngrok-free.app", "ngrok-free.dev", "kaggle", "usercontent.com"]
+        return any(ind in self.base_url.lower() for ind in cloud_indicators)
 
     def call(self, prompt: str, system_prompt: str, timeout: int,
-             model_override: str | None = None) -> str:
-        model            = model_override or self.model_name
+             model_override: Optional[str] = None) -> str:
+        model = model_override or self.model_name
+        
+        # If it's a remote/kaggle engine, use a much larger timeout (default 300s)
+        # to account for ngrok latency and 12B model cold starts.
         effective_timeout = max(timeout, 300) if self._is_cloud else timeout
-        max_attempts      = 2 if self._is_cloud else 1
+        max_attempts = 3 if self._is_cloud else 1
 
         payload = {
-            "model":   model,
-            "prompt":  prompt,
-            "system":  system_prompt,
-            "stream":  False,
+            "model": model,
+            "prompt": prompt,
+            "system": system_prompt,
+            "stream": False,
             "options": {
                 "temperature": 0.4,
                 "repeat_penalty": 1.5,
@@ -212,7 +239,8 @@ class OllamaProvider(BaseProvider):
         for attempt in range(max_attempts):
             try:
                 res = _ai_session.post(
-                    self.base_url, json=payload, headers=headers, timeout=effective_timeout,
+                    self.base_url, json=payload, headers=headers,
+                    timeout=(10, effective_timeout)
                 )
                 if res.status_code == 200:
                     return res.json().get("response", "")
@@ -225,7 +253,7 @@ class OllamaProvider(BaseProvider):
             except requests.exceptions.Timeout:
                 last_err = f"Timeout after {effective_timeout}s"
                 if attempt < max_attempts - 1:
-                    print(f"  [Ollama] Timeout on attempt {attempt + 1}. Retrying…")
+                    logger.info(f"  [Ollama] Timeout on attempt {attempt + 1}. Retrying…")
                     time.sleep(2)
                     continue
                 return f"❌ Ollama Timeout: {last_err}"

@@ -26,10 +26,11 @@ GENERAL_SECTIONS = [
 ]
 
 SECURITY_SECTIONS = [
-    "01. VERY IMPORTANT MATTERS OF SECURITY INTEREST:",
-    "02. SUBVERSIVE ACTIVITIES:",
-    "03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES:",
-    "04.OTHER MATTERS OF INTEREST AND IMPORTANCE:"
+    "01. VERY IMPORTANT MATTERS OF SECURITY INTEREST / TERRORIST ACTIVITIES:",
+    "02. RECOVERY OF ARMS / AMMUNITION / EXPLOSIVES & BOMBS:",
+    "03. PROTESTS, STRIKES & PUBLIC DEMONSTRATIONS:",
+    "04. PNB / NAVY RECOVERIES & SPECIAL SECURITY OPERATIONS:",
+    "05. OTHER MATTERS OF INTEREST AND IMPORTANCE:"
 ]
 
 # --- Official 28 Institutional Categories ---
@@ -37,32 +38,32 @@ OFFICIAL_CASE_TABLE_CATEGORIES = [
     "01. Terrorist Activities",
     "02. Recovery of Arms & Ammunition",
     "03. Protests & Strikes",
-    "04. SERIOUS CRIMES COMMITTED",
+    "04. Homicides",
     "05. Robberies",
     "06. Thefts of Vehicles",
     "07. Thefts of Properties",
     "08. House Breaking & Theft",
-    "09. Rape & Sexual Abuse",
-    "10. FATAL ACCIDENTS",
-    "11. Unidentified Dead Bodies & Suspicious Dead Bodies",
+    "09. Rape & sexual Abuse",
+    "10. Fatal accidents",
+    "11. Unidentified dead bodies & suspicious dead bodies",
     "12. Police Accidents",
-    "13. Serious Injuries of Police Officers and Damages to Police Property",
-    "14. Misconducts of Police Officers",
-    "15. Deaths of Police Officers",
-    "16. Hospital Admission of SGOO",
-    "17. Passing Away of Close Relatives of SGOO",
-    "18. Passing Away of Close Relatives of Retired SGOO",
+    "13. Serious injuries of Police officers and Damages to Police Property",
+    "14. Misconducts of Police officers",
+    "15. Deaths of Police officers",
+    "16. Hospital admission of SGOO",
+    "17. Passing away of close Relatives of SGOO",
+    "18. Passing away of close relatives of retired SGOO",
     "19. Detections of Narcotics & Illicit Liquor",
     "20. Arrests",
-    "21. Arresting of Tri-Forces Members",
+    "21. Arresting of Tri-forces Members",
     "22. Disappearances",
     "23. Suicides",
-    "24. Incidents Regarding Foreigners",
-    "25. Wild Elephant Attacks & Deaths of Wild Elephants",
-    "26. Deaths Due to Drowning",
+    "24. Incidents regarding Foreigners",
+    "25. Wild elephant attacks & Deaths of wild elephants",
+    "26. Deaths due to drowning",
     "27. Incidents of Fire",
-    "28. Others",
-    "29. Other Special Incidents",
+    "28. Cyber Crimes & Digital Offences",
+    "29. Others",
 ]
 
 # =============================================================================

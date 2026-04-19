@@ -79,6 +79,9 @@ def split_combined_english_incidents(body: str) -> list[str]:
     return [t]
 
 
+from translation_vocabulary import is_security_incident
+
+
 def classify_english_incident_body(body: str) -> str | None:
     """
     Return target category id "01".."29" when content clearly belongs there; else None
@@ -88,16 +91,12 @@ def classify_english_incident_body(body: str) -> str | None:
     if len(b) < 30:
         return None
 
-    # Security institutional: PNB / Navy / harbour handover + bulk drugs + firearms
-    if re.search(r"POLICE\s+NARCOTICS\s+BUREAU", b, re.I):
-        return "02"
-    if re.search(r"Sri\s+Lanka\s+Navy", b, re.I) and re.search(
-        r"handed\s+over\s+to\s+the\s+PNB|PNB\s+at\s+the\s+fisher", b, re.I
-    ):
-        return "02"
-    if re.search(r"heroin|methamphetamine|\bice\b.*firearm|fishing\s+vessels", b, re.I) and re.search(
-        r"T-56|M-16|pistols.*magazine|magazines", b, re.I
-    ):
+    # Use the shared security detection logic from translation_vocabulary
+    if is_security_incident(b):
+        # Default to Category 02 (Recovery of Arms & Ammunition) if it's security-related
+        # unless specifically matched to another security category.
+        if re.search(r"PROTEST|STRIKE|DEMONSTRATION|වැඩ වර්ජන", b, re.I):
+            return "03"
         return "02"
 
     # General: vehicle / motorcycle theft (distinct from security PNB block)

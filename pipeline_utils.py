@@ -4,9 +4,11 @@ pipeline_utils.py — Advanced Pipeline Utilities
 Implements: Confidence Scoring, Validation, Pattern Extraction,
             Normalization, Caching, Logging, Context Memory, Retry Logic.
 
-System Version: v2.0.0
-Prompt Version: stable_v3
+System Version: v2.1.0
+Prompt Version: stable_v4
 """
+
+from __future__ import annotations  # Python 3.9+ compatibility
 
 import hashlib
 import json
@@ -14,7 +16,9 @@ import os
 import re
 import time
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Callable
 
+# Local project imports
 import db_manager
 import police_geo_utils
 
@@ -39,7 +43,8 @@ QUALITY_KEYWORDS = [
     "police station", "incident", "offence"
 ]
 
-def calculate_confidence(incident):
+
+def calculate_confidence(incident: Dict[str, Any]) -> float:
     """
     Calculate confidence score (0.0 - 1.0) for a single extracted incident.
     
@@ -92,7 +97,10 @@ def calculate_confidence(incident):
     score += hierarchy_score * 0.15
 
     # --- 5. Date Presence (10%) ---
-    date_found = bool(re.search(r'\d{4}[./-]\d{2}[./-]\d{2}|\d{1,2}(?:st|nd|rd|th)\s+\w+\s+\d{4}', body)) if body else False
+    date_found = bool(re.search(
+        r'\d{4}[./-]\d{2}[./-]\d{2}|\d{1,2}(?:st|nd|rd|th)\s+\w+\s+\d{4}', 
+        body
+    )) if body else False
     score += (1.0 if date_found else 0.0) * 0.10
 
     # --- 6. Suspect/Victim Info (10%) ---
@@ -112,7 +120,7 @@ def calculate_confidence(incident):
     return round(score, 3)
 
 
-def calculate_section_confidence(section):
+def calculate_section_confidence(section: Dict[str, Any]) -> float:
     """Calculate average confidence for all incidents in a section."""
     all_scores = []
     for prov in section.get("provinces", []):
@@ -126,7 +134,7 @@ def calculate_section_confidence(section):
     return 1.0  # Empty section = treated as perfect (Nil)
 
 
-def calculate_report_confidence(data):
+def calculate_report_confidence(data: Dict[str, Any]) -> float:
     """Calculate overall report confidence and annotate each section."""
     section_scores = []
     for sec in data.get("sections", []):
@@ -143,9 +151,9 @@ def calculate_report_confidence(data):
 # 2. VALIDATION RULES
 # =============================================================================
 
-def validate_date(date_str):
+def validate_date(date_str: Optional[str]) -> Optional[str]:
     """Check if a date string is in a valid format. Attempt auto-fix."""
-    if not date_str or date_str.strip().lower() in ["unknown", "-", "nil"]:
+    if not date_str or date_str.strip().lower() in ["unknown", "-", "nil", ""]:
         return date_str
 
     # Standard formats to try
@@ -161,7 +169,13 @@ def validate_date(date_str):
             continue
 
     # Try extracting from free text like "18th March 2026"
-    match = re.search(r'(\d{1,2})(?:st|nd|rd|th)?\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s*(\d{4})', date_str, re.IGNORECASE)
+    match = re.search(
+        r'(\d{1,2})(?:st|nd|rd|th)?\s*'
+        r'(January|February|March|April|May|June|July|August|September|October|November|December)'
+        r'\s*(\d{4})', 
+        date_str, 
+        re.IGNORECASE
+    )
     if match:
         try:
             dt = datetime.strptime(f"{match.group(1)} {match.group(2)} {match.group(3)}", "%d %B %Y")
@@ -172,10 +186,10 @@ def validate_date(date_str):
     return date_str  # Return as-is if can't fix
 
 
-def validate_money(money_str):
+def validate_money(money_str: Optional[str]) -> str:
     """Check if money value is realistic for Sri Lanka police reports (Rs. 100 - Rs. 100,000,000)."""
     if not money_str:
-        return money_str
+        return "Nil"
 
     # Extract numeric value
     nums = re.findall(r'[\d,]+', money_str)
@@ -195,7 +209,7 @@ def validate_money(money_str):
     return money_str
 
 
-def validate_incident(incident):
+def validate_incident(incident: Dict[str, Any]) -> List[str]:
     """
     Validate a structured incident dict. Returns list of issues found.
     Auto-fixes where possible.
@@ -209,14 +223,14 @@ def validate_incident(incident):
         issues.append("EMPTY_BODY: Incident body is empty or too short")
 
     # 2. Empty station check
-    if not station or station.upper() in ["UNKNOWN", ""]:
+    if not station or station.upper() in ["UNKNOWN", "", "N/A"]:
         issues.append("MISSING_STATION: No station name identified")
 
     # 3. Date validation in body
     dates_in_body = re.findall(r'\d{4}[./-]\d{2}[./-]\d{2}', body)
     for d in dates_in_body:
         fixed = validate_date(d)
-        if fixed != d:
+        if fixed and fixed != d:
             incident["body"] = body.replace(d, fixed)
 
     # 4. Money validation in body
@@ -235,7 +249,7 @@ def validate_incident(incident):
     return issues
 
 
-def validate_report(data):
+def validate_report(data: Dict[str, Any]) -> int:
     """Validate all incidents in a report. Returns total issue count."""
     total_issues = 0
     for sec in data.get("sections", []):
@@ -250,7 +264,7 @@ def validate_report(data):
 # 3. REGEX PATTERN EXTRACTION (Pre-LLM)
 # =============================================================================
 
-def extract_dates(text):
+def extract_dates(text: str) -> List[Dict[str, Any]]:
     """Extract all date patterns from Sinhala/English text."""
     patterns = [
         r'(\d{4}[./-]\d{2}[./-]\d{2})',                          # 2026.03.18
@@ -264,7 +278,7 @@ def extract_dates(text):
     return results
 
 
-def extract_money(text):
+def extract_money(text: str) -> List[Dict[str, Any]]:
     """Extract monetary values from text."""
     patterns = [
         r'(?:Rs\.?|රුපියල්)\s*([\d,]+)/?=?',        # Rs. 50,000/=
@@ -278,7 +292,7 @@ def extract_money(text):
     return results
 
 
-def extract_vehicle_numbers(text):
+def extract_vehicle_numbers(text: str) -> List[Dict[str, Any]]:
     """Extract Sri Lankan vehicle plate numbers."""
     patterns = [
         r'([A-Z]{2,3}[-\s]?[A-Z]{2,3}[-\s]?\d{4})',  # WP CAB 1234
@@ -291,7 +305,7 @@ def extract_vehicle_numbers(text):
     return results
 
 
-def extract_phone_numbers(text):
+def extract_phone_numbers(text: str) -> List[Dict[str, Any]]:
     """Extract phone/TP numbers."""
     patterns = [
         r'(?:TP|Tel|Phone|දුරකථන)\s*[:.]?\s*(0\d{2}[-\s]?\d{7}|\d{10})',
@@ -303,7 +317,7 @@ def extract_phone_numbers(text):
     return results
 
 
-def extract_all_patterns(text):
+def extract_all_patterns(text: str) -> Dict[str, Any]:
     """Run all regex extractors and return structured results."""
     return {
         "dates": extract_dates(text),
@@ -360,15 +374,15 @@ NORMALIZATION_MAP = {
 }
 
 
-def normalize_station_name(station):
-    """Normalize station names to consistent Title Case."""
+def normalize_station_name(station: Optional[str]) -> str:
+    """Normalize station names to consistent ALL CAPS (official format)."""
     if not station:
         return "UNKNOWN"
     # Keep ALL CAPS for station names (official format)
     return station.upper().strip()
 
 
-def normalize_body_text(body):
+def normalize_body_text(body: Optional[str]) -> str:
     """Clean and normalize incident body text."""
     if not body:
         return ""
@@ -386,25 +400,25 @@ def normalize_body_text(body):
         body = body[0].upper() + body[1:]
 
     # Ensure ending with period
-    if body and body[-1] not in ['.', ')', '!']:
+    if body and body[-1] not in ['.', ')', '!', '?']:
         body += "."
 
     return body
 
 
-def normalize_incident(incident):
+def normalize_incident(incident: Dict[str, Any]) -> Dict[str, Any]:
     """Apply all normalization rules to a single incident."""
     incident["station"] = normalize_station_name(incident.get("station", ""))
     incident["body"] = normalize_body_text(incident.get("body", ""))
 
     # Normalize hierarchy entries
     hierarchy = incident.get("hierarchy", [])
-    incident["hierarchy"] = [h.strip() for h in hierarchy if h.strip()]
+    incident["hierarchy"] = [h.strip() for h in hierarchy if h and h.strip()]
 
     return incident
 
 
-def normalize_report(data):
+def normalize_report(data: Dict[str, Any]) -> Dict[str, Any]:
     """Apply normalization to all incidents in a report."""
     for sec in data.get("sections", []):
         for prov in sec.get("provinces", []):
@@ -420,17 +434,18 @@ def normalize_report(data):
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "cache")
 
 
-def _ensure_cache_dir():
+def _ensure_cache_dir() -> None:
+    """Ensure cache directory exists."""
     os.makedirs(CACHE_DIR, exist_ok=True)
 
 
-def generate_hash(text):
+def generate_hash(text: str) -> str:
     """Generate a stable hash for input text."""
     cleaned = re.sub(r'\s+', ' ', text.strip().lower())
     return hashlib.sha256(cleaned.encode("utf-8")).hexdigest()[:16]
 
 
-def cache_get(text_hash):
+def cache_get(text_hash: str) -> Optional[Dict[str, Any]]:
     """Retrieve cached result from SQLite if available."""
     try:
         conn = db_manager.get_connection()
@@ -468,11 +483,11 @@ def cache_get(text_hash):
     return None
 
 
-def cache_set(text_hash, data):
+def cache_set(text_hash: str, data: Dict[str, Any]) -> None:
     """Store complete report in SQLite for 100% durability."""
     try:
         # 1. Save Report Meta
-        report_type = "General" # Fallback
+        report_type = "General"  # Fallback
         report_id = db_manager.save_report("cached_report.pdf", "2026-03-19", report_type, text_hash)
 
         # 2. Save Sections and Incidents
@@ -485,7 +500,7 @@ def cache_set(text_hash, data):
                         inc.get("station", ""),
                         inc.get("province", ""),
                         inc.get("body", ""),
-                        "", # Ref
+                        "",  # Ref
                         inc.get("_confidence", 1.0),
                         inc.get("consensus_status", "OllamaOnly")
                     )
@@ -494,7 +509,7 @@ def cache_set(text_hash, data):
         print(f"  [DB Cache] WRITE ERROR: {e}")
 
 
-def cache_clear():
+def cache_clear() -> int:
     """Clear all cached results."""
     _ensure_cache_dir()
     count = 0
@@ -513,11 +528,12 @@ def cache_clear():
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "processing_logs")
 
 
-def _ensure_log_dir():
+def _ensure_log_dir() -> None:
+    """Ensure log directory exists."""
     os.makedirs(LOG_DIR, exist_ok=True)
 
 
-def create_processing_log(input_text, report_type, use_ai=False):
+def create_processing_log(input_text: str, report_type: str, use_ai: bool = False) -> Dict[str, Any]:
     """Create a new processing log entry. Returns log dict to be updated."""
     _ensure_log_dir()
     log_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -544,7 +560,7 @@ def create_processing_log(input_text, report_type, use_ai=False):
     return log
 
 
-def save_processing_log(log):
+def save_processing_log(log: Dict[str, Any]) -> str:
     """Save the processing log to disk."""
     _ensure_log_dir()
     log_file = os.path.join(LOG_DIR, f"log_{log['log_id']}.json")
@@ -556,8 +572,7 @@ def save_processing_log(log):
     return log_file
 
 
-
-def get_recent_logs(count=10):
+def get_recent_logs(count: int = 10) -> List[Dict[str, Any]]:
     """Get the most recent processing logs."""
     _ensure_log_dir()
     files = sorted(
@@ -585,15 +600,15 @@ class ContextMemory:
     """
 
     def __init__(self):
-        self.last_location = None
-        self.last_date = None
-        self.last_province = None
-        self.last_dig = None
-        self.last_div = None
-        self.seen_stations = set()
-        self.seen_suspects = []
+        self.last_location: Optional[str] = None
+        self.last_date: Optional[str] = None
+        self.last_province: Optional[str] = None
+        self.last_dig: Optional[str] = None
+        self.last_div: Optional[str] = None
+        self.seen_stations: set = set()
+        self.seen_suspects: List[str] = []
 
-    def update_from_incident(self, incident):
+    def update_from_incident(self, incident: Dict[str, Any]) -> None:
         """Extract and store context from a processed incident."""
         station = incident.get("station", "").strip()
         body = incident.get("body", "")
@@ -617,7 +632,7 @@ class ContextMemory:
                 elif "DIV" in h_upper:
                     self.last_div = h
 
-    def fill_gaps(self, incident):
+    def fill_gaps(self, incident: Dict[str, Any]) -> Dict[str, Any]:
         """Fill missing fields from context memory."""
         station = incident.get("station", "").strip()
         hierarchy = incident.get("hierarchy", [])
@@ -641,7 +656,7 @@ class ContextMemory:
 
         return incident
 
-    def get_summary(self):
+    def get_summary(self) -> Dict[str, Any]:
         """Return a summary of the current context state."""
         return {
             "last_location": self.last_location,
@@ -669,19 +684,19 @@ LOW_CONFIDENCE_THRESHOLD = 0.6
 QUALITY_GATE_THRESHOLD = 0.5
 
 
-def should_retry(confidence_score, retry_count=0, max_retries=2):
+def should_retry(confidence_score: float, retry_count: int = 0, max_retries: int = 2) -> bool:
     """Determine if a section should be retried based on confidence."""
     if retry_count >= max_retries:
         return False
     return confidence_score < LOW_CONFIDENCE_THRESHOLD
 
 
-def build_retry_prompt(original_prompt, previous_output=""):
+def build_retry_prompt(original_prompt: str, previous_output: str = "") -> str:
     """Build an improved prompt for retry attempts."""
     return original_prompt + "\n\n" + RETRY_PROMPT_SUFFIX
 
 
-def quality_gate_check(data):
+def quality_gate_check(data: Dict[str, Any]) -> Tuple[bool, str, float]:
     """
     Final quality gate before PDF generation.
     Returns (pass: bool, message: str, confidence: float)
@@ -700,7 +715,7 @@ def quality_gate_check(data):
 # 9. EDGE CASE HANDLER
 # =============================================================================
 
-def handle_edge_cases(incident):
+def handle_edge_cases(incident: Dict[str, Any]) -> Dict[str, Any]:
     """Handle common edge cases in incident data."""
     body = incident.get("body", "")
 
@@ -758,12 +773,14 @@ SINHALA_CLASSIFICATION = {
 }
 
 
-def classify_incident_hybrid(text, llm_classify_fn=None):
+def classify_incident_hybrid(text: str, llm_classify_fn: Optional[Callable[[str], str]] = None) -> Tuple[str, str]:
     """
     Hybrid incident classifier:
     1. Try rule-based Sinhala keywords first (fast)
     2. Try English keyword matching
     3. Fall back to LLM only if needed
+    
+    Returns: (category, source) where source is "rule_sinhala", "rule_english", "llm", or "default"
     """
     # Pass 1: Sinhala keyword match
     for sinhala_kw, category in SINHALA_CLASSIFICATION.items():
@@ -807,7 +824,7 @@ def classify_incident_hybrid(text, llm_classify_fn=None):
 # MASTER: Full Pipeline Enhancement
 # =============================================================================
 
-def enhance_pipeline_output(data, input_text=""):
+def enhance_pipeline_output(data: Dict[str, Any], input_text: str = "") -> Dict[str, Any]:
     """
     Run ALL enhancement passes on the final structured data:
     1. Normalize
@@ -834,7 +851,7 @@ def enhance_pipeline_output(data, input_text=""):
                     pass
 
                 # Auto-assign Province if not set or "National"
-                if not inc.get("province") or inc.get("province").upper() == "NATIONAL PROVINCE":
+                if not inc.get("province") or inc.get("province", "").upper() == "NATIONAL PROVINCE":
                     geo = police_geo_utils.get_geo_info(inc.get("station", ""))
                     if geo["province"] != "NATIONAL PROVINCE":
                         inc["province"] = geo["province"]
@@ -918,4 +935,4 @@ if __name__ == "__main__":
     cat2, source2 = classify_incident_hybrid("A case of robbery at knifepoint was reported")
     print(f"  Classification: {cat2} (via {source2})")
 
-    print("\n✅ All self-tests passed!")
+    print("\n[SUCCESS] All self-tests passed!")

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Police Report Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 30px;
+            box-shadow: 0 30px 90px rgba(0,0,0,0.3);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.6s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 2px, transparent 2px);
+            background-size: 30px 30px;
+            animation: headerPattern 15s linear infinite;
+        }
+        
+        @keyframes headerPattern {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header h1 { 
+            font-size: 3em; 
+            margin-bottom: 15px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: fadeInDown 0.8s ease-out;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header p { 
+            font-size: 1.3em; 
+            opacity: 0.95;
+            font-weight: 400;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 50px;
+            margin-top: 15px;
+            font-size: 0.9em;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+        
+        .content { 
+            padding: 50px 60px;
+            animation: fadeIn 0.8s ease-out 0.4s both;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .form-group {
+            margin-bottom: 35px;
+            animation: slideInLeft 0.6s ease-out both;
+        }
+        
+        .form-group:nth-child(1) { animation-delay: 0.5s; }
+        .form-group:nth-child(2) { animation-delay: 0.6s; }
+        .form-group:nth-child(3) { animation-delay: 0.7s; }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #2d3748;
+            font-size: 1.15em;
+            letter-spacing: -0.3px;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #f7fafc;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .form-group textarea {
+            min-height: 450px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.15em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 40px;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 25px;
+            position: relative;
+        }
+        
+        .spinner::before,
+        .spinner::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+        }
+        
+        .spinner::before {
+            width: 100%;
+            height: 100%;
+            border: 4px solid #f3f3f3;
+        }
+        
+        .spinner::after {
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-top-color: #667eea;
+            border-right-color: #667eea;
+            animation: spinnerRotate 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+        
+        @keyframes spinnerRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading p {
+            font-size: 1.1em;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        
+        .results {
+            display: none;
+            margin-top: 40px;
+            animation: slideInUp 0.6s ease-out;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            border: 2px solid #e8ebff;
+            transition: all 0.3s ease;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.15);
+        }
+        
+        .result-card h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .result-card p {
+            font-size: 1.1em;
+            color: #4a5568;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 14px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            display: inline-block;
+            margin: 12px 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 700;
+            font-size: 1.05em;
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.3);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(72, 187, 120, 0.4);
+        }
+        
+        .error {
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 25px;
+            display: none;
+            font-weight: 500;
+            animation: shake 0.5s ease-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .success {
+            background: linear-gradient(135deg, #e6f7ed 0%, #d4edda 100%);
+            border: 2px solid #28a745;
+            color: #155724;
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 25px;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        
+        .example {
+            background: linear-gradient(135deg, #e8f4f8 0%, #d6eaf5 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 15px;
+            font-size: 0.95em;
+            border: 2px solid #bee5eb;
+        }
+        
+        .example strong {
+            color: #0c5460;
+            font-size: 1.05em;
+        }
+        
+        .example pre {
+            margin: 15px 0;
+            overflow-x: auto;
+            background: rgba(255,255,255,0.6);
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>📄 Police Report Generator</h1>
+                <p>Generate Professional General & Security Reports</p>
+                <div class="badge">✨ With Full Details & Beautiful Formatting</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="form-group">
+                <label>📅 Date Range</label>
+                <input type="text" id="dateRange" placeholder="From 0400 hrs. on 18th March 2026 to 0400 hrs. on 19th March 2026" value="From 0400 hrs. on 18th March 2026 to 0400 hrs. on 19th March 2026">
+            </div>
+            
+            <div class="form-group">
+                <label>📋 Incidents Data (JSON Format)</label>
+                <textarea id="incidentsData" placeholder="Paste your incidents JSON here...">[
+  {
+    "station": "HINIDUMA",
+    "summary": "Arrest of suspects with firearms",
+    "body": "On 17th March 2026, police arrested three suspects...",
+    "hierarchy": ["DIG Galle District", "Elpitiya Div."],
+    "province": "SOUTHERN",
+    "category": "arms"
+  },
+  {
+    "station": "KIRIDIWELA",
+    "summary": "A case of homicide",
+    "body": "On 18th March 2026, a case of homicide was reported...",
+    "hierarchy": ["DIG Gampaha District", "Gampaha Div."],
+    "province": "WESTERN",
+    "category": "general"
+  }
+]</textarea>
+            </div>
+            
+            <div class="example">
+                <strong>💡 Format Guide:</strong>
+                <pre>• "category": "arms" → Goes to Security Report
+• "category": "general" → Goes to General Report
+• "province": Province name (WESTERN, SOUTHERN, etc.)
+• "hierarchy": ["DIG District", "Division"]
+• "body": Full incident description with all details</pre>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px;">
+                <button class="btn" id="generateBtn">
+                    <span>🚀 Generate Reports</span>
+                </button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generating reports... Please wait...</p>
+            </div>
+            
+            <div class="error" id="error"></div>
+            
+            <div class="results" id="results">
+                <div class="success">
+                    ✅ Reports generated successfully!
+                </div>
+                
+                <div class="result-card">
+                    <h3>📊 Summary</h3>
+                    <p><strong>Security incidents:</strong> <span id="securityCount">0</span></p>
+                    <p><strong>General incidents:</strong> <span id="generalCount">0</span></p>
+                </div>
+                
+                <div class="result-card">
+                    <h3>📥 Download Reports</h3>
+                    <div id="downloadLinks"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+        
+        generateBtn.addEventListener('click', async () => {
+            const dateRange = document.getElementById('dateRange').value;
+            const incidentsText = document.getElementById('incidentsData').value;
+            
+            if (!incidentsText.trim()) {
+                showError('Please enter incidents data');
+                return;
+            }
+            
+            let incidents;
+            try {
+                incidents = JSON.parse(incidentsText);
+            } catch (e) {
+                showError('Invalid JSON format. Please check your data.');
+                return;
+            }
+            
+            generateBtn.disabled = true;
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            results.style.display = 'none';
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date_range: dateRange,
+                        incidents: incidents
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResults(data);
+                } else {
+                    showError(data.error || 'An error occurred');
+                }
+            } catch (err) {
+                showError('Could not connect to server');
+            } finally {
+                loading.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        });
+        
+        function showResults(data) {
+            document.getElementById('securityCount').textContent = data.security_count;
+            document.getElementById('generalCount').textContent = data.general_count;
+            
+            const downloadLinks = document.getElementById('downloadLinks');
+            downloadLinks.innerHTML = '';
+            
+            data.files.forEach(file => {
+                const link = document.createElement('a');
+                link.href = `/download/${file}`;
+                link.className = 'download-btn';
+                
+                if (file.includes('Security')) {
+                    link.innerHTML = '🔒 Security Report PDF';
+                } else {
+                    link.innerHTML = '📋 General Report PDF';
+                }
+                
+                downloadLinks.appendChild(link);
+            });
+            
+            results.style.display = 'block';
+        }
+        
+        function showError(message) {
+            error.textContent = `❌ ${message}`;
+            error.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

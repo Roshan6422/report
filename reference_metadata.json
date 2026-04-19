@@ -1,0 +1,73 @@
+{
+    "general": {
+        "summary_cols": [
+            "Theft",
+            "HB & Theft",
+            "Robberies and Armed Robberies",
+            "Rape & Sexual Abuse",
+            "Homicide",
+            "Police Accidents",
+            "Fatal Accidents",
+            "Others",
+            "Grand total"
+        ],
+        "case_table": {
+            "01": "-",
+            "02": 8,
+            "03": 1,
+            "04": 1,
+            "05": 1,
+            "06": 4,
+            "07": 4,
+            "08": 2,
+            "09": 4,
+            "10": 4,
+            "11": 3,
+            "12": "-",
+            "13": 3,
+            "14": 8,
+            "15": 3,
+            "16": 1,
+            "17": "-",
+            "18": "-",
+            "19": 18,
+            "20": 4,
+            "21": 2,
+            "22": 11,
+            "23": 2,
+            "24": 2,
+            "25": 1,
+            "26": "-",
+            "27": "-",
+            "28": 5
+        },
+        "province_order": [
+            "Western Province",
+            "Sabaragamuwa Province",
+            "Southern Province",
+            "Uva Province",
+            "Central Province",
+            "North Western Province",
+            "North Central Province",
+            "Eastern Province",
+            "Northern Province"
+        ]
+    },
+    "security": {
+        "sections": [
+            "01. VERY IMPORTANT MATTERS OF SECURITY INTEREST: Nil",
+            "02. SUBVERSIVE ACTIVITIES: Nil",
+            "03. RECOVERIES OF ARMS / AMMUNITION / EXPLOSIVES:",
+            "04. OTHER MATTERS OF INTEREST AND IMPORTANCE:"
+        ],
+        "province_sequence": [
+            "Western Province",
+            "Uva Province",
+            "Central Province",
+            "North Western Province",
+            "North Central Province",
+            "Eastern Province",
+            "Northern Province"
+        ]
+    }
+}
