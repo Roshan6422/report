@@ -1,4 +1,153 @@
+# ══════════════════════════════════════════════════════════
+#  Sri Lanka Police AI — Git Ignore File
+#  🔐 Security First: Never commit secrets, outputs, or caches
+# ══════════════════════════════════════════════════════════
+
+# ── 🔐 Sensitive Files (NEVER commit these) ───────────────
+.env
+.env.local
+.env.*.local
+*.key
+*_keys.json
+api_keys_backup.*
+google_vision_key.json
+*.pem
+*.crt
+*.p12
+credentials.json
+service_account.json
+
+# ── 🐍 Python ─────────────────────────────────────────────
 __pycache__/
-*.pyc
-# Build artifacts
-report
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ── 🧪 Testing & Coverage ─────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+*.log
+
+# ── 📦 Virtual Environments ───────────────────────────────
+venv/
+ENV/
+env/
+.venv/
+env.bak/
+venv.bak/
+.pyre/
+
+# ── 🗂️ Project Outputs (Generated Reports) ────────────────
+outputs/
+renders/
+*_extracted.json
+*_summary.txt
+*_ai.json
+*_translated.json
+*.docx
+*.pdf
+report_*.pdf
+General_Report_*.docx
+Security_Report_*.docx
+
+# ── 📊 Logs & Debug ───────────────────────────────────────
+*.log
+ai_engine.log
+ocr_debug.log
+translation_debug.log
+logs/
+debug/
+
+# ── 🖥️ IDE / Editor ──────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+*.temp
+*~
+.project
+.pydevproject
+.settings/
+
+# ── 🪟 OS Specific ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ── 📦 Distribution / Build ───────────────────────────────
+build/
+dist/
+*.whl
+*.tar.gz
+*.zip
+*.rar
+*.7z
+
+# ── 🌐 Web / Flask ────────────────────────────────────────
+instance/
+web.config
+*.sqlite3
+*.db
+db.sqlite3
+database.db
+
+# ── 🤖 AI / Model Files (Large binaries) ──────────────────
+*.bin
+*.pt
+*.pth
+*.onnx
+*.safetensors
+models/
+checkpoints/
+*.gguf
+*.ggml
+
+# ── 📄 Documentation ──────────────────────────────────────
+*.pdf
+*.doc
+*.docx
+*.ppt
+*.pptx
+docs/_build/
+
+# ── 🧹 Temporary / Cache ─────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.temp
+.cache/
+*.cache
+
+# ── 🚫 Explicitly Allow (Optional) ────────────────────────
+# !.env.example          # Allow template .env
+# !README.md            # Always include docs
+# !requirements.txt     # Always include dependencies
+.aider*
