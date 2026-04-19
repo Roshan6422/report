@@ -19,6 +19,6 @@ services:
       - key: PORT
         value: "8000"
     build:
-      type: buildpack
-    run:
-      command: gunicorn --bind :$PORT backend_cloud:app
+      type: docker
+      dockerfile: Dockerfile
+
