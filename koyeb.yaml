@@ -10,7 +10,7 @@ services:
       - path: /
         port: 8000
     regions:
-      - fra # Frankfurt is usually fast, or use 'was' for US
+      - fra
     instance_type: nano
     scaling:
       min: 1
@@ -21,4 +21,5 @@ services:
     build:
       type: docker
       dockerfile: Dockerfile
-
+    run:
+      command: gunicorn --bind :$PORT backend_cloud:app
